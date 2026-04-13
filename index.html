@@ -36,19 +36,23 @@
         }
 
         #war-table {
-            width: 90%; height: 85%;
-            background-color: #2c1e16; /* Madera oscura */
-            background-image: url('assets/mapa_juego.jpg'); /* Imagen de prueba */
-            background-size: cover; background-position: center;
-            border: 15px solid #3d2b1f; /* Marco de la mesa */
-            border-radius: 4px;
-            box-shadow: 0 50px 80px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.7);
-            
-            /* INCLINACIÓN AGRESIVA (Igual que referencia pero 3D) */
-            transform: rotateX(25deg) rotateY(0deg) rotateZ(-1deg);
-            transform-style: preserve-3d;
-            position: relative;
-        }
+    /* Achicamos las dimensiones un toque */
+    width: 80vw;  /* Bajamos de 90% a 80vw */
+    height: 75vh; /* Bajamos de 85% a 75vh */
+    
+    background-color: #2c1e16;
+    background-image: url('assets/mapa_juego.jpg');
+    background-size: cover; 
+    background-position: center;
+    border: 12px solid #3d2b1f; /* Marco un poco más fino también */
+    border-radius: 4px;
+    box-shadow: 0 40px 70px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.5);
+    
+    /* Mantenemos la inclinación pero la centramos mejor */
+    transform: rotateX(25deg) rotateY(0deg) rotateZ(-0.5deg);
+    transform-style: preserve-3d;
+    position: relative;
+}
 
         /* Botones de Zoom (Igual que referencia) */
         #zoom-controls {
