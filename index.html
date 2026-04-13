@@ -3,38 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartografía Naval - WSB</title>
+    <title>Estrategia Naval - Gremio WSB</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; }
+        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
         #map { height: 100vh; width: 100%; background: #1a1a1a; }
         
-        /* Panel de Control */
         .ui-panel {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(20, 20, 20, 0.9); border: 2px solid #f1c40f;
-            padding: 15px; color: #f1c40f; border-radius: 5px;
+            background: rgba(15, 15, 15, 0.9); border: 2px solid #f1c40f;
+            padding: 15px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 200px;
         }
 
-        .port-card { text-align: center; color: #f1c40f; }
+        .section-title { border-bottom: 1px solid #f1c40f; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
+        
         .boton-ui {
-            background: #f1c40f; color: black; border: none;
-            padding: 5px 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px;
+            background: transparent; color: #f1c40f; border: 1px solid #f1c40f;
+            padding: 5px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 11px;
         }
-        .boton-borrar { background: #e74c3c; color: white; margin-top: 10px; }
+        .boton-ui:hover { background: #f1c40f; color: black; }
+        .boton-borrar { color: #e74c3c; border-color: #e74c3c; }
+
+        /* Estilo para distinguir tipos de iconos */
+        .port-card { text-align: center; min-width: 140px; }
     </style>
 </head>
 <body>
 
     <div class="ui-panel">
-        <h3>MI BITÁCORA</h3>
-        <p><small>Click derecho para añadir punto</small></p>
-        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MAPA</button>
+        <div class="section-title">⚓ DATOS DEL GREMIO</div>
+        <p style="font-size: 10px;">Actualizado desde Excel central</p>
+        
+        <div class="section-title" style="margin-top:15px;">📜 MI BITÁCORA</div>
+        <button class="boton-ui" onclick="togglePersonal()">MOSTRAR/OCULTAR MIS PUNTOS</button>
+        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MI MAPA</button>
     </div>
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
     <script>
         // 1. CONFIGURACIÓN DEL MAPA
         var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
@@ -42,95 +52,101 @@
         L.imageOverlay('mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // 2. DEFINICIÓN DE ICONOS
-        var iconos = {
-            puerto: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2942/2942023.png', iconSize: [30, 30], iconAnchor: [15, 30] }),
-            tesoro: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4150/4150371.png', iconSize: [30, 30], iconAnchor: [15, 30] }),
-            peligro: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/564/564619.png', iconSize: [30, 30], iconAnchor: [15, 30] })
-        };
+        // Capas para separar Gremio de Personal
+        var capaGremio = L.layerGroup().addTo(map);
+        var capaPersonal = L.layerGroup().addTo(map);
 
-        // 3. SISTEMA DE GUARDADO (Local Storage)
-        var marcadoresGuardados = JSON.parse(localStorage.getItem('misPuntosWSB')) || [];
-
-        // Cargar puntos previos al iniciar
-        marcadoresGuardados.forEach(data => {
-            crearMarcador(data.latlng, data.tipo, data.nota, false);
+        // 2. ICONOS
+        var iconoGremio = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2942/2942023.png',
+            iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30]
         });
 
-        function guardarEnMemoria() {
-            var datos = [];
-            map.eachLayer(function(layer) {
-                if (layer instanceof L.Marker && layer.options.tipo) {
-                    datos.push({
-                        latlng: layer.getLatLng(),
-                        tipo: layer.options.tipo,
-                        nota: layer.getPopup().getContent().split('value="')[1]?.split('"')[0] || ""
-                    });
-                }
+        var iconoPersonal = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/10627/10627113.png', // Icono de brújula/punto
+            iconSize: [25, 25], iconAnchor: [12, 12]
+        });
+
+        // 3. CARGA DESDE GOOGLE SHEETS (PARA EL GREMIO)
+        const googleSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQqSCUDEKeGxbn1VQ2lObyN8hoNG-6uRRbqHleytYUih-7RJgu46RAqEKG_tIzIVcKeSecn5iTRRzvb/pub?gid=0&single=true&output=csv'; 
+
+        Papa.parse(googleSheetURL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                results.data.forEach(fila => {
+                    let x = parseFloat(fila.CoordenadaX || fila.x);
+                    let y = parseFloat(fila.CoordenadaY || fila.y);
+                    if (!isNaN(x) && !isNaN(y)) {
+                        L.marker([x, y], {icon: iconoGremio}).addTo(capaGremio)
+                         .bindPopup(`
+                            <div class="port-card">
+                                <h3 style="margin:0; color:#f1c40f;">${fila.Puerto}</h3>
+                                <hr>
+                                <p style="margin:5px 0;">📦 <b>Carga:</b> ${fila.Mercancia}</p>
+                                <p style="margin:5px 0;">💰 <b>Precio:</b> ${fila.precio} pz</p>
+                                <button class="boton-ui">ESTABLECER RUTA</button>
+                            </div>
+                         `);
+                    }
+                });
+            }
+        });
+
+        // 4. SISTEMA PERSONAL (LOCALSTORAGE)
+        var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
+
+        function cargarPersonales() {
+            misPuntos.forEach((p, index) => {
+                dibujarPuntoPersonal(p.latlng, p.nota, index);
             });
-            localStorage.setItem('misPuntosWSB', JSON.stringify(datos));
         }
 
-        // 4. CREAR MARCADORES
-        function crearMarcador(latlng, tipo, nota = "", guardar = true) {
-            var m = L.marker(latlng, { 
-                icon: iconos[tipo], 
-                draggable: true,
-                tipo: tipo 
-            }).addTo(map);
-
-            var popupContent = `
+        function dibujarPuntoPersonal(latlng, nota, id) {
+            var m = L.marker(latlng, { icon: iconoPersonal, draggable: true }).addTo(capaPersonal);
+            m.bindPopup(`
                 <div class="port-card">
-                    <strong style="text-transform: uppercase;">${tipo}</strong><br>
-                    <input type="text" id="nota-${m._leaflet_id}" value="${nota}" placeholder="Nombre/Nota..." 
-                           style="background:#000; color:#f1c40f; border:1px solid #f1c40f; margin-top:5px; padding:3px;">
-                    <button class="boton-ui" onclick="borrarMarcador(${m._leaflet_id})">ELIMINAR</button>
+                    <b>MARCA PERSONAL</b><br>
+                    <input type="text" value="${nota}" onchange="actualizarNota(${id}, this.value)" 
+                           style="background:#000; color:#f1c40f; border:1px solid #444; width:80%; margin:5px 0;">
+                    <button class="boton-ui" style="color:red;" onclick="borrarPunto(${id})">ELIMINAR</button>
                 </div>
-            `;
-
-            m.bindPopup(popupContent);
-            
-            // Eventos para guardar cambios
-            m.on('dragend', guardarEnMemoria);
-            m.on('popupclose', guardarEnMemoria);
-            
-            if(guardar) guardarEnMemoria();
-            return m;
+            `);
+            m.on('dragend', function() { actualizarPosicion(id, m.getLatLng()); });
         }
 
-        // 5. MENÚ CLIC DERECHO (Interacción)
+        // 5. INTERACCIÓN
         map.on('contextmenu', function(e) {
-            var tempPopup = L.popup()
-                .setLatLng(e.latlng)
-                .setContent(`
-                    <div class="port-card">
-                        <b>AÑADIR A BITÁCORA</b><br>
-                        <button class="boton-ui" onclick="colocar('puerto', ${e.latlng.lat}, ${e.latlng.lng})">⚓ PUERTO</button>
-                        <button class="boton-ui" onclick="colocar('tesoro', ${e.latlng.lat}, ${e.latlng.lng})">💰 TESORO/NAUFRAGIO</button>
-                        <button class="boton-ui" onclick="colocar('peligro', ${e.latlng.lat}, ${e.latlng.lng})">💀 PELIGRO</button>
-                    </div>
-                `)
-                .openOn(map);
+            let nota = prompt("Nombre del punto personal:");
+            if (nota !== null) {
+                let nuevoPunto = { latlng: e.latlng, nota: nota };
+                misPuntos.push(nuevoPunto);
+                localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
+                dibujarPuntoPersonal(e.latlng, nota, misPuntos.length - 1);
+            }
         });
 
-        function colocar(tipo, lat, lng) {
-            map.closePopup();
-            crearMarcador([lat, lng], tipo);
-        }
-
-        function borrarMarcador(id) {
-            map.eachLayer(function(layer) {
-                if (layer._leaflet_id === id) map.removeLayer(layer);
-            });
-            guardarEnMemoria();
+        // FUNCIONES DE CONTROL
+        function togglePersonal() {
+            if (map.hasLayer(capaPersonal)) { map.removeLayer(capaPersonal); }
+            else { map.addLayer(capaPersonal); }
         }
 
         function borrarTodo() {
-            if(confirm("¿Seguro que quieres borrar todo tu mapa personal?")) {
-                localStorage.removeItem('misPuntosWSB');
+            if(confirm("¿Borrar todos tus puntos personales?")) {
+                localStorage.removeItem('puntos_personales_wsb');
                 location.reload();
             }
         }
+
+        function borrarPunto(id) {
+            misPuntos.splice(id, 1);
+            localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
+            location.reload(); // Recarga simple para limpiar el mapa
+        }
+
+        cargarPersonales();
     </script>
 </body>
 </html>
