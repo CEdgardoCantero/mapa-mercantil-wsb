@@ -324,7 +324,7 @@ function suavizarRuta(puntos){
 // ======================
 
 // ======================
-// ANIMACION NAVAL FLOW REAL
+// ANIMACION NAVAL FLOW FIX CRS.SIMPLE
 // ======================
 
 var barcoAnimado = null;
@@ -338,9 +338,7 @@ function animarRuta(ruta){
 
     animacionActiva = true;
 
-    let rutaSuave = suavizarRuta(ruta);
-
-    if(rutaSuave.length < 2) return;
+    if(ruta.length < 2) return;
 
     let barcoIcon = L.icon({
         iconUrl:'assets/iconos/ship.png',
@@ -349,48 +347,49 @@ function animarRuta(ruta){
         className:'barco-rotable'
     });
 
-    barcoAnimado = L.marker(rutaSuave[0],{
+    barcoAnimado = L.marker(ruta[0],{
         icon:barcoIcon
     }).addTo(map);
 
+    let segmento = 0;
     let progreso = 0;
-    let velocidad = 0.001;
+    let velocidad = 0.003; // más pequeño = más lento
     let tiempo = 0;
 
     function animar(){
 
         if(!animacionActiva) return;
 
+        let p1 = ruta[segmento];
+        let p2 = ruta[segmento + 1];
+
+        if(!p2){
+            segmento = 0; // loop limpio
+            progreso = 0;
+            requestAnimationFrame(animar);
+            return;
+        }
+
         progreso += velocidad;
 
         if(progreso >= 1){
-            progreso = 0; // loop infinito limpio
+            progreso = 0;
+            segmento++;
         }
 
-        let total = rutaSuave.length - 1;
-        let posicionReal = progreso * total;
-
-        let index = Math.floor(posicionReal);
-        let t = posicionReal - index;
-
-        let p1 = rutaSuave[index];
-        let p2 = rutaSuave[index + 1];
-
-        if(!p2) return;
-
-        let lat = p1.lat + (p2.lat - p1.lat) * t;
-        let lng = p1.lng + (p2.lng - p1.lng) * t;
+        let lat = p1.lat + (p2.lat - p1.lat) * progreso;
+        let lng = p1.lng + (p2.lng - p1.lng) * progreso;
 
         barcoAnimado.setLatLng([lat, lng]);
 
-        // Rotación
+        // Rotación correcta en CRS.Simple
         let dx = p2.lng - p1.lng;
         let dy = p2.lat - p1.lat;
         let angulo = Math.atan2(dy, dx) * 180 / Math.PI;
 
-        // Balanceo cartoon suave
+        // Balanceo suave
         tiempo += 0.05;
-        let balanceo = Math.sin(tiempo) * 6;
+        let balanceo = Math.sin(tiempo) * 5;
 
         let iconElement = barcoAnimado.getElement();
         if(iconElement){
