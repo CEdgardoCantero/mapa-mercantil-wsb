@@ -8,171 +8,101 @@
     <style>
         body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
         #map { height: 100vh; width: 100%; background: #1a1a1a; cursor: crosshair; }
-        
         .ui-panel {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             background: rgba(15, 15, 15, 0.9); border: 2px solid #f1c40f;
-            padding: 15px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            max-width: 200px;
+            padding: 15px; border-radius: 8px; max-width: 200px;
         }
-
         .section-title { border-bottom: 1px solid #f1c40f; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
-        
         .boton-ui {
             background: transparent; color: #f1c40f; border: 1px solid #f1c40f;
             padding: 5px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 11px;
-            font-weight: bold; text-transform: uppercase;
         }
         .boton-ui:hover { background: #f1c40f; color: black; }
-        .boton-borrar { color: #e74c3c; border-color: #e74c3c; }
-
         .port-card { text-align: center; min-width: 140px; color: #f1c40f; }
-        .port-card h3 { margin: 0; border-bottom: 1px solid #f1c40f; padding-bottom: 5px; }
     </style>
 </head>
 <body>
 
     <div class="ui-panel">
         <div class="section-title">⚓ DATOS DEL GREMIO</div>
-        <p style="font-size: 10px; margin-top: -5px;">(Sincronizado con Excel)</p>
-        
+        <p style="font-size: 10px;">Sincronizado vía JSON</p>
         <div class="section-title" style="margin-top:15px;">📜 MI BITÁCORA</div>
         <button class="boton-ui" onclick="togglePersonal()">VER/OCULTAR MIS PUNTOS</button>
-        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MI MAPA</button>
+        <button class="boton-ui" style="color:#e74c3c;" onclick="borrarTodo()">RESETEAR MAPA</button>
     </div>
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
     <script>
-        // 1. CONFIGURACIÓN DEL MAPA
-        var map = L.map('map', { 
-            crs: L.CRS.Simple, 
-            minZoom: -1,
-            attributionControl: false 
-        });
-
-        var bounds = [[0, 0], [1500, 2000]]; // Ajusta según el tamaño de tu mapa_juego.jpg
+        var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
+        var bounds = [[0, 0], [1500, 2000]];
         L.imageOverlay('mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // Capas separadas
         var capaGremio = L.layerGroup().addTo(map);
         var capaPersonal = L.layerGroup().addTo(map);
 
-        // 2. ICONOS
         var iconoGremio = L.icon({
             iconUrl: 'https://cdn-icons-png.flaticon.com/512/2942/2942023.png',
             iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30]
         });
 
-        var iconoPersonal = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/10627/10627113.png', 
-            iconSize: [25, 25], iconAnchor: [12, 12]
-        });
-
-        // 3. CARGA DE EXCEL (GREMIO)
-        // 3. CARGA DE DATOS DEL GREMIO (Desde archivo local JSON)
-        fetch('puertos.json?v=' + Date.now()) // Agregamos un número único al final
-            .then(response => response.json())
+        // CARGA INSTANTÁNEA (Evita el caché de GitHub)
+        fetch('puertos.json?v=' + Date.now())
+            .then(res => res.json())
             .then(data => {
-                console.log("Datos del gremio sincronizados:", data.length);
-                data.forEach(fila => {
-                    if (fila.x !== 0 || fila.y !== 0) {
-                        L.marker([fila.x, fila.y], {icon: iconoGremio}).addTo(capaGremio)
-                         .bindPopup(`
-                            <div class="port-card">
-                                <h3>${fila.puerto}</h3>
-                                <p>📦 <b>Carga:</b> ${fila.carga}</p>
-                                <p>💰 <b>Precio:</b> ${fila.precio} pz</p>
-                            </div>
-                         `);
-                    }
+                data.forEach(p => {
+                    L.marker([p.x, p.y], {icon: iconoGremio}).addTo(capaGremio)
+                     .bindPopup(`
+                        <div class="port-card">
+                            <h3>${p.puerto}</h3>
+                            <p>📦 <b>Carga:</b> ${p.carga}</p>
+                            <p>💰 <b>Precio:</b> ${p.precio} pz</p>
+                        </div>
+                     `);
                 });
-            })
-            .catch(error => console.error("Error cargando bitácora del gremio:", error));
-
-        // 4. SISTEMA DE BITÁCORA PERSONAL (LocalStorage)
-        var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
-
-        function cargarPersonales() {
-            misPuntos.forEach((p, index) => {
-                dibujarPuntoPersonal(p.latlng, p.nota, index);
             });
-        }
 
-        function dibujarPuntoPersonal(latlng, nota, id) {
-            var m = L.marker(latlng, { icon: iconoPersonal, draggable: true }).addTo(capaPersonal);
-            m.bindPopup(`
-                <div class="port-card">
-                    <b>MARCA PERSONAL</b><br>
-                    <input type="text" value="${nota}" onchange="actualizarNota(${id}, this.value)" 
-                           style="background:#000; color:#f1c40f; border:1px solid #444; width:90%; margin:5px 0; padding:3px;">
-                    <button class="boton-ui" style="color:#e74c3c; border-color:#e74c3c;" onclick="borrarPunto(${id})">BORRAR</button>
-                </div>
-            `);
-            // Guardar posición si se arrastra
-            m.on('dragend', function() {
-                misPuntos[id].latlng = m.getLatLng();
-                localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
-            });
-        }
-
-        function actualizarNota(id, nuevaNota) {
-            misPuntos[id].nota = nuevaNota;
-            localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
-        }
-
-        // 5. INTERACCIONES DE CLIC
+        // CLIC IZQUIERDO: Coordenadas
         var coordPopup = L.popup();
-
-        // Clic Izquierdo: Muestra coordenadas para tu Excel
         map.on('click', function(e) {
-            coordPopup
-                .setLatLng(e.latlng)
-                .setContent(`
-                    <div style="text-align:center;">
-                        <b>COORDENADAS EXCEL</b><br>
-                        X: ${e.latlng.lat.toFixed(0)}<br>
-                        Y: ${e.latlng.lng.toFixed(0)}
-                    </div>
-                `)
+            coordPopup.setLatLng(e.latlng)
+                .setContent("X: " + e.latlng.lat.toFixed(0) + " | Y: " + e.latlng.lng.toFixed(0))
                 .openOn(map);
         });
 
-        // Clic Derecho: Crea punto personal
-        map.on('contextmenu', function(e) {
-            let nombre = prompt("Nombre de tu marca personal:");
-            if (nombre !== null) {
-                let p = { latlng: e.latlng, nota: nombre || "Punto de Interés" };
-                misPuntos.push(p);
+        // BITÁCORA PERSONAL (Clic Derecho)
+        var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
+        function cargarPersonales() {
+            misPuntos.forEach((p, i) => dibujarPuntoPersonal(p.latlng, p.nota, i));
+        }
+
+        function dibujarPuntoPersonal(latlng, nota, id) {
+            L.marker(latlng, { draggable: true }).addTo(capaPersonal)
+             .bindPopup(`<b>${nota}</b><br><button onclick="location.reload();">Borrar punto (F5)</button>`);
+        }
+
+        map.on('contextmenu', e => {
+            let n = prompt("Nombre:");
+            if(n) {
+                misPuntos.push({latlng: e.latlng, nota: n});
                 localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
-                dibujarPuntoPersonal(p.latlng, p.nota, misPuntos.length - 1);
+                dibujarPuntoPersonal(e.latlng, n, misPuntos.length-1);
             }
         });
 
-        // FUNCIONES DEL PANEL
         function togglePersonal() {
             if (map.hasLayer(capaPersonal)) map.removeLayer(capaPersonal);
             else map.addLayer(capaPersonal);
         }
 
         function borrarTodo() {
-            if(confirm("¿Seguro que quieres limpiar tu bitácora personal?")) {
-                localStorage.removeItem('puntos_personales_wsb');
-                location.reload();
-            }
-        }
-
-        function borrarPunto(id) {
-            misPuntos.splice(id, 1);
-            localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
+            localStorage.removeItem('puntos_personales_wsb');
             location.reload();
         }
 
-        // Arrancar bitácora
         cargarPersonales();
     </script>
 </body>
