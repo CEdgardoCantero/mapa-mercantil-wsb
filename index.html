@@ -79,6 +79,37 @@
             z-index: 2000;
         }
 
+        <div class="map-mode-selector">
+    <div id="mode-label">MODO: LOCAL</div>
+    <label class="switch">
+        <input type="checkbox" id="mode-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+
+
+        .map-mode-selector {
+    display: flex; flex-direction: column; align-items: center;
+    background: #2a1f14; padding: 10px; border-radius: 4px;
+    margin-bottom: 15px; border: 1px solid #b8860b;
+}
+#mode-label { font-size: 10px; color: #f1c40f; margin-bottom: 5px; font-weight: bold; }
+
+/* El Switch */
+.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #555; transition: .4s; border-radius: 20px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 14px; width: 14px;
+    left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: #33d1ff; } /* Color para Gremio */
+input:checked + .slider:before { transform: translateX(20px); }
+
+        
         .palette-title {
             color: #f1c40f; text-align: center; font-size: 12px;
             margin-bottom: 15px; border-bottom: 1px solid #333;
@@ -258,35 +289,92 @@
         });
 
         // 4. PLANTAR MARCADO CON MENÚ
-        map.on('contextmenu', function(e) {
-            if (!iconoSeleccionado) { alert("¡Capitán! Seleccione un icono primero."); return; }
+       // 1. CAPAS Y MEMORIA
+var capaLocal = L.layerGroup().addTo(map);
+var capaGremio = L.layerGroup(); // No la añadimos al mapa de entrada
+var modoGremio = false;
 
-            var markerHtml = `
-                <div class="custom-marker-container">
-                    <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
-                    <img src="${iconoSeleccionado}" class="marker-icon-img">
-                </div>`;
+// Cargar datos al iniciar
+cargarMapa();
 
-            var customIcon = L.divIcon({ html: markerHtml, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-            
-            var m = L.marker(e.latlng, { icon: customIcon }).addTo(capaMarcadores);
+// 2. CAMBIO DE MODO
+document.getElementById('mode-toggle').onchange = function() {
+    modoGremio = this.checked;
+    const label = document.getElementById('mode-label');
+    
+    if (modoGremio) {
+        label.innerText = "MODO: GREMIO";
+        label.style.color = "#33d1ff";
+        map.addLayer(capaGremio);
+        map.removeLayer(capaLocal); // Ocultar lo personal
+    } else {
+        label.innerText = "MODO: LOCAL";
+        label.style.color = "#f1c40f";
+        map.addLayer(capaLocal);
+        map.removeLayer(capaGremio);
+    }
+};
 
-            // Menú interactivo
-            var menu = L.DomUtil.create('div', 'popup-menu');
-            
-            var btnMercado = L.DomUtil.create('button', 'popup-btn', menu);
-            btnMercado.innerHTML = "VER MERCADO";
-            btnMercado.onclick = () => alert("Mercado próximamente...");
+// 3. FUNCIÓN PARA GUARDAR (PERSISTENCIA)
+function guardarMapa() {
+    const datosLocal = [];
+    capaLocal.eachLayer(layer => {
+        datosLocal.push({ latlng: layer.getLatLng(), icono: layer.options.icon.options.html });
+    });
+    localStorage.setItem('mapa_local_wsb', JSON.stringify(datosLocal));
 
-            var btnInfo = L.DomUtil.create('button', 'popup-btn', menu);
-            btnInfo.innerHTML = "INFORMACIÓN";
+    const datosGremio = [];
+    capaGremio.eachLayer(layer => {
+        datosGremio.push({ latlng: layer.getLatLng(), icono: layer.options.icon.options.html });
+    });
+    localStorage.setItem('mapa_gremio_wsb', JSON.stringify(datosGremio));
+}
 
-            var btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-            btnBorrar.innerHTML = "ELIMINAR";
-            btnBorrar.onclick = () => { map.closePopup(); capaMarcadores.removeLayer(m); };
+// 4. FUNCIÓN PARA CARGAR
+function cargarMapa() {
+    const storageLocal = JSON.parse(localStorage.getItem('mapa_local_wsb') || "[]");
+    storageLocal.forEach(d => recrearMarcador(d, capaLocal));
 
-            m.bindPopup(menu);
-        });
+    const storageGremio = JSON.parse(localStorage.getItem('mapa_gremio_wsb') || "[]");
+    storageGremio.forEach(d => recrearMarcador(d, capaGremio));
+}
+
+function recrearMarcador(data, capa) {
+    const icon = L.divIcon({ html: data.icono, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+    const m = L.marker(data.latlng, { icon: icon }).addTo(capa);
+    vincularMenu(m, capa);
+}
+
+// 5. MODIFICAR EL CLIC DERECHO PARA USAR LA CAPA ACTIVA
+map.on('contextmenu', function(e) {
+    if (!iconoSeleccionado) return;
+
+    var markerHtml = `
+        <div class="custom-marker-container">
+            <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
+            <img src="${iconoSeleccionado}" class="marker-icon-img">
+        </div>`;
+
+    var icon = L.divIcon({ html: markerHtml, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+    
+    const capaActiva = modoGremio ? capaGremio : capaLocal;
+    var m = L.marker(e.latlng, { icon: icon }).addTo(capaActiva);
+    
+    vincularMenu(m, capaActiva);
+    guardarMapa(); // Guardar al poner
+});
+
+// Función para vincular el menú (reutilizable)
+function vincularMenu(m, capa) {
+    var menu = L.DomUtil.create('div', 'popup-menu');
+    var btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
+    btnBorrar.innerHTML = "ELIMINAR";
+    btnBorrar.onclick = () => { 
+        capa.removeLayer(m); 
+        guardarMapa(); 
+    };
+    m.bindPopup(menu);
+}
 
         // 5. LIMPIAR TODO
         document.getElementById('btn-clear').onclick = function() {
