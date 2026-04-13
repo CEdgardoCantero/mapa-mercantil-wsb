@@ -327,6 +327,10 @@ function suavizarRuta(puntos){
 // ANIMACION NAVAL ESTABLE REAL
 // ======================
 
+// ======================
+// ANIMACION NAVAL CORRECTA (NO ROMPE TRANSFORM)
+// ======================
+
 var barcoAnimado = null;
 var animacionActiva = false;
 
@@ -340,29 +344,41 @@ function animarRuta(ruta){
 
     animacionActiva = true;
 
-    // Convertimos ruta a puntos de capa (pixeles reales)
-    let puntosPixeles = ruta.map(p => map.latLngToLayerPoint(p));
-
-    let barcoIcon = L.icon({
-        iconUrl:'assets/iconos/ship.png',
-        iconSize:[40,40],
-        iconAnchor:[20,20],
-        className:'barco-rotable'
+    // Icono HTML personalizado (IMPORTANTE)
+    let barcoIcon = L.divIcon({
+        className: '',
+        html: `
+            <div id="barco-wrapper" style="
+                width:40px;
+                height:40px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+            ">
+                <img src="assets/iconos/ship.png"
+                     style="width:40px;height:40px;"
+                     id="barco-img">
+            </div>
+        `,
+        iconSize: [40,40],
+        iconAnchor: [20,20]
     });
 
-    barcoAnimado = L.marker(ruta[0],{ icon:barcoIcon }).addTo(map);
+    barcoAnimado = L.marker(ruta[0],{
+        icon:barcoIcon
+    }).addTo(map);
 
     let segmento = 0;
     let progreso = 0;
-    let velocidad = 0.01; // velocidad visual real
+    let velocidad = 0.005;
     let tiempo = 0;
 
     function animar(){
 
         if(!animacionActiva) return;
 
-        let p1 = puntosPixeles[segmento];
-        let p2 = puntosPixeles[segmento + 1];
+        let p1 = ruta[segmento];
+        let p2 = ruta[segmento + 1];
 
         if(!p2){
             segmento = 0;
@@ -378,25 +394,23 @@ function animarRuta(ruta){
             segmento++;
         }
 
-        let x = p1.x + (p2.x - p1.x) * progreso;
-        let y = p1.y + (p2.y - p1.y) * progreso;
+        let lat = p1.lat + (p2.lat - p1.lat) * progreso;
+        let lng = p1.lng + (p2.lng - p1.lng) * progreso;
 
-        // Convertimos de pixeles a LatLng correctamente
-        let nuevaLatLng = map.layerPointToLatLng(L.point(x,y));
-        barcoAnimado.setLatLng(nuevaLatLng);
+        barcoAnimado.setLatLng([lat, lng]);
 
-        // Rotación correcta
-        let dx = p2.x - p1.x;
-        let dy = p2.y - p1.y;
+        // Calcular ángulo
+        let dx = p2.lng - p1.lng;
+        let dy = p2.lat - p1.lat;
         let angulo = Math.atan2(dy, dx) * 180 / Math.PI;
 
         tiempo += 0.05;
         let balanceo = Math.sin(tiempo) * 5;
 
-        let iconElement = barcoAnimado.getElement();
-        if(iconElement){
-            iconElement.style.transform =
-                `rotate(${angulo + balanceo}deg)`;
+        // 🔥 SOLO rotamos la imagen interna
+        let img = document.getElementById("barco-img");
+        if(img){
+            img.style.transform = `rotate(${angulo + balanceo}deg)`;
         }
 
         requestAnimationFrame(animar);
