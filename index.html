@@ -39,13 +39,12 @@
 
         #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
 
-        /* PALETA DERECHA CON SCROLL */
         #palette {
             background-color: #1a1a1a;
             border-left: 2px solid #3d3d3d;
             padding: 15px;
             display: flex; flex-direction: column;
-            overflow-y: auto; /* Permite ver todos los iconos */
+            overflow-y: auto; /* Scroll para ver los 21 iconos */
             z-index: 2000;
         }
 
@@ -58,24 +57,17 @@
             text-align: center;
         }
 
-        #mode-label { font-size: 11px; color: #f1c40f; margin-bottom: 10px; font-weight: bold; display: block; }
+        #mode-label { font-size: 11px; color: #f1c40f; font-weight: bold; display: block; margin-bottom: 10px; }
 
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #0088cc; }
-        input:checked + .slider:before { transform: translateX(26px); }
-
-        .palette-title { color: #f1c40f; text-align: center; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid #333; }
+        .palette-title { color: #f1c40f; text-align: center; font-size: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; letter-spacing: 1px; }
         
         #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .icon-btn { 
             width: 100%; height: 65px; background: #262626; border: 1px solid #3d3d3d; 
             display: flex; justify-content: center; align-items: center; cursor: pointer; 
         }
-        .icon-btn img { width: 35px; height: 35px; }
-        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; background: #3d2b1f; }
+        .icon-btn img { width: 32px; height: 32px; }
+        .icon-btn.selected { border-color: #f1c40f; background: #3d2b1f; box-shadow: 0 0 8px #f1c40f; }
 
         .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
         .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
@@ -83,15 +75,15 @@
 
         .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 10px; margin-top: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
 
-        /* MARCADORES */
+        /* Estilo Marcadores */
         .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
         .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
-        .marker-icon-img { width: 26px; height: 26px; z-index: 2; }
+        .marker-icon-img { width: 24px; height: 24px; z-index: 2; }
 
+        /* Popups */
         .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
-        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; min-width: 150px; }
         .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
-        .btn-delete { color: #ff4d4d; }
     </style>
 </head>
 <body>
@@ -106,37 +98,33 @@
         <div id="palette">
             <div class="mode-container">
                 <span id="mode-label">MODO: LOCAL</span>
-                <label class="switch">
-                    <input type="checkbox" id="mode-toggle">
-                    <span class="slider"></span>
-                </label>
+                <input type="checkbox" id="mode-toggle" style="cursor:pointer;">
             </div>
 
             <div class="palette-title">MAESTRO CARTÓGRAFO</div>
             
             <div id="icon-grid">
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/copper.png')"><img src="assets/iconos/copper.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/resin.png')"><img src="assets/iconos/resin.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/rum.png')"><img src="assets/iconos/rum.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/water.png')"><img src="assets/iconos/water.png"></div>
-                
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/pirate-city.png')"><img src="assets/iconos/pirate-city.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/lighthouse.png')"><img src="assets/iconos/lighthouse.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/farm.png')"><img src="assets/iconos/farm.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fishing-village.png')"><img src="assets/iconos/fishing-village.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/altar.png')"><img src="assets/iconos/altar.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/bay.png')"><img src="assets/iconos/bay.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/copper.png')"><img src="assets/iconos/copper.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/farm.png')"><img src="assets/iconos/farm.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fishing-village.png')"><img src="assets/iconos/fishing-village.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/island.png')"><img src="assets/iconos/island.png"></div>
-
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/printshop.png')"><img src="assets/iconos/printshop.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/lighthouse.png')"><img src="assets/iconos/lighthouse.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/pirate-city.png')"><img src="assets/iconos/pirate-city.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/points-of-interest.png')"><img src="assets/iconos/points-of-interest.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/printshop.png')"><img src="assets/iconos/printshop.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/resin.png')"><img src="assets/iconos/resin.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/rum.png')"><img src="assets/iconos/rum.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/text-mark.png')"><img src="assets/iconos/text-mark.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/water.png')"><img src="assets/iconos/water.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/skull.png')"><img src="assets/iconos/skull.png"></div>
             </div>
 
             <div class="color-selector">
@@ -206,10 +194,21 @@
                 </div>`;
             const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
             const m = L.marker(posicion, { icon: icon }).addTo(capa);
-            
+            vincularMenu(m, capa);
+        }
+
+        function vincularMenu(m, capa) {
             const menu = L.DomUtil.create('div', 'popup-menu');
-            const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-            btnBorrar.innerHTML = "BORRAR";
+            menu.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>NOTAS:</strong>";
+            const inputNota = L.DomUtil.create('textarea', '', menu);
+            inputNota.style.cssText = "width:100%; height:40px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace;";
+            
+            if (m.options.nota) inputNota.value = m.options.nota;
+            inputNota.onblur = () => { m.options.nota = inputNota.value; guardarMemoria(); };
+
+            const btnBorrar = L.DomUtil.create('button', 'popup-btn', menu);
+            btnBorrar.innerHTML = "ELIMINAR";
+            btnBorrar.style.color = "#ff4d4d";
             btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
             m.bindPopup(menu);
         }
@@ -217,11 +216,11 @@
         function guardarMemoria() {
             const extraer = (capa) => {
                 let res = [];
-                capa.eachLayer(l => res.push({ latlng: l.getLatLng(), html: l.options.icon.options.html }));
+                capa.eachLayer(l => res.push({ latlng: l.getLatLng(), html: l.options.icon.options.html, nota: l.options.nota || "" }));
                 return res;
             };
-            localStorage.setItem('wsb_v2_local', JSON.stringify(extraer(capaLocal)));
-            localStorage.setItem('wsb_v2_gremio', JSON.stringify(extraer(capaGremio)));
+            localStorage.setItem('wsb_final_local', JSON.stringify(extraer(capaLocal)));
+            localStorage.setItem('wsb_final_gremio', JSON.stringify(extraer(capaGremio)));
         }
 
         function cargarMemoria() {
@@ -230,19 +229,16 @@
                 datos.forEach(d => {
                     const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
                     const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
-                    const menu = L.DomUtil.create('div', 'popup-menu');
-                    const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-                    btnBorrar.innerHTML = "BORRAR";
-                    btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
-                    m.bindPopup(menu);
+                    m.options.nota = d.nota;
+                    vincularMenu(m, capa);
                 });
             };
-            reconstruir('wsb_v2_local', capaLocal);
-            reconstruir('wsb_v2_gremio', capaGremio);
+            reconstruir('wsb_final_local', capaLocal);
+            reconstruir('wsb_final_gremio', capaGremio);
         }
 
         function limpiarCapaActual() {
-            if(confirm("¿Borrar todo lo de esta capa?")) {
+            if(confirm("¿Borrar capa actual?")) {
                 modoGremio ? capaGremio.clearLayers() : capaLocal.clearLayers();
                 guardarMemoria();
             }
