@@ -27,15 +27,12 @@
 
         #main-container {
             display: grid;
-            grid-template-columns: 1fr 200px; /* Ancho ajustado de la paleta */
+            grid-template-columns: 1fr 220px; 
             width: 100vw; height: 100vh;
         }
 
         /* 2. AREA DEL MAPA */
-        #map-area {
-            display: flex; justify-content: center; align-items: center;
-            perspective: 1500px;
-        }
+        #map-area { display: flex; justify-content: center; align-items: center; perspective: 1500px; }
 
         #war-table {
             width: 70vw; height: 75vh;
@@ -49,16 +46,9 @@
             overflow: hidden;
         }
 
-        #map { 
-            width: 100%; height: 100%; 
-            background: #1a1a1a; 
-            cursor: grab;
-        }
-        #map:active { cursor: grabbing; }
-
+        #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
         .leaflet-control-zoom { display: none !important; }
 
-        /* Botones de Zoom */
         #zoom-controls {
             position: absolute; top: 10px; left: 10px; z-index: 1000;
             display: flex; flex-direction: column; gap: 5px;
@@ -73,46 +63,36 @@
         #palette {
             background-color: #1a1a1a;
             border-left: 1px solid #3d3d3d;
-            padding: 10px;
+            padding: 15px;
             display: flex; flex-direction: column;
             overflow-y: auto;
             z-index: 2000;
         }
 
-        <div class="map-mode-selector">
-    <div id="mode-label">MODO: LOCAL</div>
-    <label class="switch">
-        <input type="checkbox" id="mode-toggle">
-        <span class="slider"></span>
-    </label>
-</div>
-
-
+        /* SELECTOR DE MODO */
         .map-mode-selector {
-    display: flex; flex-direction: column; align-items: center;
-    background: #2a1f14; padding: 10px; border-radius: 4px;
-    margin-bottom: 15px; border: 1px solid #b8860b;
-}
-#mode-label { font-size: 10px; color: #f1c40f; margin-bottom: 5px; font-weight: bold; }
+            display: flex; flex-direction: column; align-items: center;
+            background: #2a1f14; padding: 10px; border-radius: 4px;
+            margin-bottom: 15px; border: 1px solid #b8860b;
+        }
+        #mode-label { font-size: 10px; color: #f1c40f; margin-bottom: 8px; font-weight: bold; }
 
-/* El Switch */
-.switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #555; transition: .4s; border-radius: 20px;
-}
-.slider:before {
-    position: absolute; content: ""; height: 14px; width: 14px;
-    left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
-}
-input:checked + .slider { background-color: #33d1ff; } /* Color para Gremio */
-input:checked + .slider:before { transform: translateX(20px); }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #555; transition: .4s; border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px;
+            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #33d1ff; }
+        input:checked + .slider:before { transform: translateX(22px); }
 
-        
         .palette-title {
-            color: #f1c40f; text-align: center; font-size: 12px;
-            margin-bottom: 15px; border-bottom: 1px solid #333;
+            color: #f1c40f; text-align: center; font-size: 11px;
+            margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px;
         }
 
         #icon-grid {
@@ -121,90 +101,34 @@ input:checked + .slider:before { transform: translateX(20px); }
         }
 
         .icon-btn {
-            width: 65px; height: 65px; background-color: #262626;
+            width: 80px; height: 60px; background-color: #262626;
             border: 1px solid #3d3d3d; border-radius: 4px;
             display: flex; justify-content: center; align-items: center;
             cursor: pointer;
         }
-        .icon-btn img { width: 45px; height: 45px; object-fit: contain; }
+        .icon-btn img { width: 40px; height: 40px; object-fit: contain; }
         .icon-btn:hover { border-color: #f1c40f; }
 
-        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: auto; }
+        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
         .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
+        .color-dot.active { border: 2px solid #f1c40f; transform: scale(1.1); }
 
         .action-btn {
             background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b;
-            width: 100%; padding: 8px; margin-top: 10px; cursor: pointer;
+            width: 100%; padding: 10px; margin-top: 15px; cursor: pointer;
             font-size: 10px; font-weight: bold;
         }
-        #coords { text-align: center; color: #888; font-size: 10px; margin-top: 5px; }
-        /* Estilo para el marcador con círculo de color */
-.custom-marker-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-}
+        #coords { text-align: center; color: #888; font-size: 10px; margin-top: 10px; }
 
-.marker-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 3px solid white; /* Color por defecto */
-    background: rgba(0, 0, 0, 0.3);
-    position: absolute;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-.marker-icon-img {
-    width: 28px;
-    height: 28px;
-    z-index: 2;
-    object-fit: contain;
-}
-
-/* Efecto de selección en la paleta */
-.color-dot.active {
-    border: 3px solid #f1c40f;
-    transform: scale(1.2);
-}
-   <style>
-        /* (Mantenemos tus estilos anteriores y agregamos los del Popup) */
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background-color: #0d0d0d; font-family: 'Courier New', monospace; display: flex; overflow: hidden; background-image: radial-gradient(circle at center, #001f3f 0%, #0d0d0d 100%); }
-        body::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: url('https://www.transparenttextures.com/patterns/dark-matter.png'); opacity: 0.1; animation: oceanFlow 60s linear infinite; z-index: -1; }
-        @keyframes oceanFlow { from { transform: translate(0, 0); } to { transform: translate(-100px, -100px); } }
-        #main-container { display: grid; grid-template-columns: 1fr 200px; width: 100vw; height: 100vh; }
-        #map-area { display: flex; justify-content: center; align-items: center; perspective: 1500px; }
-        #war-table { width: 70vw; height: 75vh; background-color: #2c1e16; border: 12px solid #3d2b1f; border-radius: 4px; box-shadow: 0 40px 70px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.5); transform: rotateX(25deg) rotateZ(-0.5deg); transform-style: preserve-3d; position: relative; overflow: hidden; }
-        #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
-        #map:active { cursor: grabbing; }
-        .leaflet-control-zoom { display: none !important; }
-        #zoom-controls { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 5px; }
-        .zoom-btn { width: 35px; height: 35px; background: rgba(0,0,0,0.8); border: 1px solid #f1c40f; color: #f1c40f; cursor: pointer; font-size: 20px; font-weight: bold; }
-        #palette { background-color: #1a1a1a; border-left: 1px solid #3d3d3d; padding: 10px; display: flex; flex-direction: column; overflow-y: auto; z-index: 2000; }
-        .palette-title { color: #f1c40f; text-align: center; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid #333; }
-        #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
-        .icon-btn { width: 65px; height: 65px; background-color: #262626; border: 1px solid #3d3d3d; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
-        .icon-btn img { width: 45px; height: 45px; object-fit: contain; }
-        .icon-btn:hover { border-color: #f1c40f; }
-        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: auto; }
-        .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
-        .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 8px; margin-top: 10px; cursor: pointer; font-size: 10px; font-weight: bold; }
-        #coords { text-align: center; color: #888; font-size: 10px; margin-top: 5px; }
-        
-        /* ESTILOS DE LOS MARCADORES */
+        /* MARCADORES Y POPUPS */
         .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
         .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; background: rgba(0, 0, 0, 0.3); position: absolute; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
         .marker-icon-img { width: 28px; height: 28px; z-index: 2; object-fit: contain; }
-        .color-dot.active { border: 3px solid #f1c40f; transform: scale(1.2); }
 
-        /* ESTILO DEL MENÚ (POPUP) */
-        .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; padding: 0; overflow: hidden; }
-        .leaflet-popup-content { margin: 8px; }
-        .popup-menu { display: flex; flex-direction: column; gap: 4px; }
-        .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 6px; cursor: pointer; font-size: 10px; font-family: 'Courier New', monospace; font-weight: bold; }
-        .popup-btn:hover { background: #4e342e; border-color: #f1c40f; }
-        .btn-delete { color: #ff4d4d; margin-top: 4px; }
+        .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
+        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+        .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
+        .btn-delete { color: #ff4d4d; }
     </style>
 </head>
 <body>
@@ -221,7 +145,16 @@ input:checked + .slider:before { transform: translateX(20px); }
         </div>
 
         <div id="palette">
+            <div class="map-mode-selector">
+                <div id="mode-label">MODO: LOCAL</div>
+                <label class="switch">
+                    <input type="checkbox" id="mode-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
             <div class="palette-title">MAESTRO CARTÓGRAFO</div>
+            
             <div id="icon-grid">
                 <div class="icon-btn" title="Coal"><img src="assets/iconos/coal.png"></div>
                 <div class="icon-btn" title="Copper"><img src="assets/iconos/copper.png"></div>
@@ -251,31 +184,34 @@ input:checked + .slider:before { transform: translateX(20px); }
                 <div class="color-dot" style="background-color: #ff33d1;"></div>
                 <div class="color-dot" style="background-color: #33ff4d;"></div>
             </div>
-            <button class="action-btn" id="btn-clear">OCULTAR TODO</button>
+
+            <button class="action-btn" id="btn-clear">LIMPIAR CAPA ACTUAL</button>
             <div id="coords">X: 0 | Y: 0</div>
         </div>
     </div>
 
     <script>
-        // 1. INICIALIZACIÓN
+        // 1. INICIALIZACIÓN DEL MAPA
         var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, zoomSnap: 0.1, attributionControl: false });
         var bounds = [[0, 0], [1000, 1300]]; 
         L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // Capa para organizar marcadores
-        var capaMarcadores = L.layerGroup().addTo(map);
-
-        // 2. ESTADO
+        // 2. CAPAS Y ESTADO
+        var capaLocal = L.layerGroup().addTo(map);
+        var capaGremio = L.layerGroup();
+        var modoGremio = false;
         var iconoSeleccionado = null;
         var colorSeleccionado = 'white';
 
-        // 3. EVENTOS DE PALETA
+        // 3. CARGAR DATOS GUARDADOS
+        cargarMapa();
+
+        // 4. EVENTOS DE LA PALETA
         document.querySelectorAll('.icon-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                document.querySelectorAll('.icon-btn').forEach(b => { b.style.borderColor = '#3d3d3d'; b.style.boxShadow = 'none'; });
+                document.querySelectorAll('.icon-btn').forEach(b => b.style.borderColor = '#3d3d3d');
                 this.style.borderColor = '#f1c40f';
-                this.style.boxShadow = '0 0 10px #f1c40f';
                 iconoSeleccionado = this.querySelector('img').src;
             });
         });
@@ -288,102 +224,84 @@ input:checked + .slider:before { transform: translateX(20px); }
             });
         });
 
-        // 4. PLANTAR MARCADO CON MENÚ
-       // 1. CAPAS Y MEMORIA
-var capaLocal = L.layerGroup().addTo(map);
-var capaGremio = L.layerGroup(); // No la añadimos al mapa de entrada
-var modoGremio = false;
-
-// Cargar datos al iniciar
-cargarMapa();
-
-// 2. CAMBIO DE MODO
-document.getElementById('mode-toggle').onchange = function() {
-    modoGremio = this.checked;
-    const label = document.getElementById('mode-label');
-    
-    if (modoGremio) {
-        label.innerText = "MODO: GREMIO";
-        label.style.color = "#33d1ff";
-        map.addLayer(capaGremio);
-        map.removeLayer(capaLocal); // Ocultar lo personal
-    } else {
-        label.innerText = "MODO: LOCAL";
-        label.style.color = "#f1c40f";
-        map.addLayer(capaLocal);
-        map.removeLayer(capaGremio);
-    }
-};
-
-// 3. FUNCIÓN PARA GUARDAR (PERSISTENCIA)
-function guardarMapa() {
-    const datosLocal = [];
-    capaLocal.eachLayer(layer => {
-        datosLocal.push({ latlng: layer.getLatLng(), icono: layer.options.icon.options.html });
-    });
-    localStorage.setItem('mapa_local_wsb', JSON.stringify(datosLocal));
-
-    const datosGremio = [];
-    capaGremio.eachLayer(layer => {
-        datosGremio.push({ latlng: layer.getLatLng(), icono: layer.options.icon.options.html });
-    });
-    localStorage.setItem('mapa_gremio_wsb', JSON.stringify(datosGremio));
-}
-
-// 4. FUNCIÓN PARA CARGAR
-function cargarMapa() {
-    const storageLocal = JSON.parse(localStorage.getItem('mapa_local_wsb') || "[]");
-    storageLocal.forEach(d => recrearMarcador(d, capaLocal));
-
-    const storageGremio = JSON.parse(localStorage.getItem('mapa_gremio_wsb') || "[]");
-    storageGremio.forEach(d => recrearMarcador(d, capaGremio));
-}
-
-function recrearMarcador(data, capa) {
-    const icon = L.divIcon({ html: data.icono, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-    const m = L.marker(data.latlng, { icon: icon }).addTo(capa);
-    vincularMenu(m, capa);
-}
-
-// 5. MODIFICAR EL CLIC DERECHO PARA USAR LA CAPA ACTIVA
-map.on('contextmenu', function(e) {
-    if (!iconoSeleccionado) return;
-
-    var markerHtml = `
-        <div class="custom-marker-container">
-            <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
-            <img src="${iconoSeleccionado}" class="marker-icon-img">
-        </div>`;
-
-    var icon = L.divIcon({ html: markerHtml, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-    
-    const capaActiva = modoGremio ? capaGremio : capaLocal;
-    var m = L.marker(e.latlng, { icon: icon }).addTo(capaActiva);
-    
-    vincularMenu(m, capaActiva);
-    guardarMapa(); // Guardar al poner
-});
-
-// Función para vincular el menú (reutilizable)
-function vincularMenu(m, capa) {
-    var menu = L.DomUtil.create('div', 'popup-menu');
-    var btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-    btnBorrar.innerHTML = "ELIMINAR";
-    btnBorrar.onclick = () => { 
-        capa.removeLayer(m); 
-        guardarMapa(); 
-    };
-    m.bindPopup(menu);
-}
-
-        // 5. LIMPIAR TODO
-        document.getElementById('btn-clear').onclick = function() {
-            if(confirm("¿Limpiar todos los planes de la mesa?")) {
-                capaMarcadores.clearLayers();
+        // Cambio de Modo (Local/Gremio)
+        document.getElementById('mode-toggle').onchange = function() {
+            modoGremio = this.checked;
+            const label = document.getElementById('mode-label');
+            if (modoGremio) {
+                label.innerText = "MODO: GREMIO"; label.style.color = "#33d1ff";
+                map.addLayer(capaGremio); map.removeLayer(capaLocal);
+            } else {
+                label.innerText = "MODO: LOCAL"; label.style.color = "#f1c40f";
+                map.addLayer(capaLocal); map.removeLayer(capaGremio);
             }
         };
 
-        map.on('mousemove', function(e) {
+        // 5. LÓGICA DE MARCADO (Clic Derecho)
+        map.on('contextmenu', function(e) {
+            if (!iconoSeleccionado) { alert("¡Capitán! Seleccione un icono."); return; }
+
+            const htmlMarcador = `
+                <div class="custom-marker-container">
+                    <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
+                    <img src="${iconoSeleccionado}" class="marker-icon-img">
+                </div>`;
+
+            const icon = L.divIcon({ html: htmlMarcador, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+            const capaActiva = modoGremio ? capaGremio : capaLocal;
+            
+            const m = L.marker(e.latlng, { icon: icon }).addTo(capaActiva);
+            vincularMenu(m, capaActiva);
+            guardarMapa();
+        });
+
+        function vincularMenu(m, capa) {
+            const menu = L.DomUtil.create('div', 'popup-menu');
+            
+            const btnMercado = L.DomUtil.create('button', 'popup-btn', menu);
+            btnMercado.innerHTML = "VER MERCADO";
+            btnMercado.onclick = () => alert("Abriendo registros comerciales...");
+
+            const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
+            btnBorrar.innerHTML = "ELIMINAR";
+            btnBorrar.onclick = () => { capa.removeLayer(m); guardarMapa(); };
+
+            m.bindPopup(menu);
+        }
+
+        // 6. PERSISTENCIA (LocalStorage)
+        function guardarMapa() {
+            const extraer = (capa) => {
+                let res = [];
+                capa.eachLayer(l => res.push({ latlng: l.getLatLng(), html: l.options.icon.options.html }));
+                return res;
+            };
+            localStorage.setItem('wsb_local', JSON.stringify(extraer(capaLocal)));
+            localStorage.setItem('wsb_gremio', JSON.stringify(extraer(capaGremio)));
+        }
+
+        function cargarMapa() {
+            const reconstruir = (key, capa) => {
+                const datos = JSON.parse(localStorage.getItem(key) || "[]");
+                datos.forEach(d => {
+                    const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+                    const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
+                    vincularMenu(m, capa);
+                });
+            };
+            reconstruir('wsb_local', capaLocal);
+            reconstruir('wsb_gremio', capaGremio);
+        }
+
+        // 7. UTILIDADES
+        document.getElementById('btn-clear').onclick = () => {
+            if(confirm("¿Borrar todos los marcadores de esta capa?")) {
+                modoGremio ? capaGremio.clearLayers() : capaLocal.clearLayers();
+                guardarMapa();
+            }
+        };
+
+        map.on('mousemove', e => {
             document.getElementById('coords').innerHTML = `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
         });
     </script>
