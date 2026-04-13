@@ -78,6 +78,7 @@ select,input,textarea{
 <button class="boton-ui" onclick="activarModoRuta()">Modo Ruta</button>
 <button class="boton-ui" onclick="guardarRutaActual()">Guardar Ruta</button>
 <button class="boton-ui" onclick="animarUltimaRuta()">Animar Última Ruta</button>
+<button class="boton-ui" onclick="detenerAnimacion()">Detener Barco</button>
 <button class="boton-ui" onclick="exportarDatos()">Exportar Local</button>
 <button class="boton-ui" onclick="resetPersonal()" style="color:#e74c3c;border-color:#e74c3c;">Reset Personal</button>
 
@@ -333,6 +334,7 @@ function suavizarRuta(puntos){
 
 var barcoAnimado = null;
 var animacionActiva = false;
+var idAnimacion = null;
 
 function animarRuta(ruta){
 
@@ -368,55 +370,78 @@ function animarRuta(ruta){
         icon:barcoIcon
     }).addTo(map);
 
-    let segmento = 0;
+    let distanciaTotal = 0;
     let progreso = 0;
-    let velocidad = 0.005;
+    let velocidad = 0.002;
     let tiempo = 0;
+
+    // Calcular distancia total de la ruta
+    for(let i = 0; i < ruta.length - 1; i++){
+        let p1 = ruta[i];
+        let p2 = ruta[i + 1];
+        let dx = p2.lng - p1.lng;
+        let dy = p2.lat - p1.lat;
+        distanciaTotal += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function obtenerPuntoEnRuta(distancia){
+        let distActual = 0;
+        for(let i = 0; i < ruta.length - 1; i++){
+            let p1 = ruta[i];
+            let p2 = ruta[i + 1];
+            let dx = p2.lng - p1.lng;
+            let dy = p2.lat - p1.lat;
+            let distSegmento = Math.sqrt(dx * dx + dy * dy);
+            
+            if(distActual + distSegmento >= distancia){
+                let t = (distancia - distActual) / distSegmento;
+                return {
+                    punto: L.latLng(
+                        p1.lat + (p2.lat - p1.lat) * t,
+                        p1.lng + (p2.lng - p1.lng) * t
+                    ),
+                    angulo: Math.atan2(dy, dx) * 180 / Math.PI,
+                    segmento: i
+                };
+            }
+            distActual += distSegmento;
+        }
+        return null;
+    }
 
     function animar(){
 
         if(!animacionActiva) return;
 
-        let p1 = ruta[segmento];
-        let p2 = ruta[segmento + 1];
+        // Progreso en bucle infinito
+        progreso = (progreso + velocidad) % 1;
 
-        if(!p2){
-            segmento = 0;
-            progreso = 0;
-            requestAnimationFrame(animar);
-            return;
+        let data = obtenerPuntoEnRuta(progreso * distanciaTotal);
+        
+        if(data){
+            barcoAnimado.setLatLng(data.punto);
+
+            tiempo += 0.05;
+            let balanceo = Math.sin(tiempo) * 5;
+
+            // 🔥 Rotamos la imagen
+            let img = document.getElementById("barco-img");
+            if(img){
+                img.style.transform = `rotate(${data.angulo + balanceo}deg)`;
+            }
         }
 
-        progreso += velocidad;
-
-        if(progreso >= 1){
-            progreso = 0;
-            segmento++;
-        }
-
-        let lat = p1.lat + (p2.lat - p1.lat) * progreso;
-        let lng = p1.lng + (p2.lng - p1.lng) * progreso;
-
-        barcoAnimado.setLatLng([lat, lng]);
-
-        // Calcular ángulo
-        let dx = p2.lng - p1.lng;
-        let dy = p2.lat - p1.lat;
-        let angulo = Math.atan2(dy, dx) * 180 / Math.PI;
-
-        tiempo += 0.05;
-        let balanceo = Math.sin(tiempo) * 5;
-
-        // 🔥 SOLO rotamos la imagen interna
-        let img = document.getElementById("barco-img");
-        if(img){
-            img.style.transform = `rotate(${angulo + balanceo}deg)`;
-        }
-
-        requestAnimationFrame(animar);
+        idAnimacion = requestAnimationFrame(animar);
     }
 
-    requestAnimationFrame(animar);
+    idAnimacion = requestAnimationFrame(animar);
+}
+
+function detenerAnimacion(){
+    animacionActiva = false;
+    if(idAnimacion){
+        cancelAnimationFrame(idAnimacion);
+    }
 }
 
 function animarUltimaRuta(){
