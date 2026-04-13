@@ -9,7 +9,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* 1. ESTRUCTURA Y FONDO */
         body, html { 
             margin: 0; padding: 0; height: 100%; width: 100%; 
             background-color: #0d0d0d;
@@ -18,20 +17,12 @@
             background-image: radial-gradient(circle at center, #001f3f 0%, #0d0d0d 100%);
         }
 
-        body::before {
-            content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background: url('https://www.transparenttextures.com/patterns/dark-matter.png');
-            opacity: 0.1; animation: oceanFlow 60s linear infinite; z-index: -1;
-        }
-        @keyframes oceanFlow { from { transform: translate(0, 0); } to { transform: translate(-100px, -100px); } }
-
         #main-container {
             display: grid;
             grid-template-columns: 1fr 220px; 
             width: 100vw; height: 100vh;
         }
 
-        /* 2. AREA DEL MAPA */
         #map-area { display: flex; justify-content: center; align-items: center; perspective: 1500px; }
 
         #war-table {
@@ -39,7 +30,7 @@
             background-color: #2c1e16;
             border: 12px solid #3d2b1f;
             border-radius: 4px;
-            box-shadow: 0 40px 70px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.5);
+            box-shadow: 0 40px 70px rgba(0,0,0,0.9);
             transform: rotateX(25deg) rotateZ(-0.5deg);
             transform-style: preserve-3d;
             position: relative;
@@ -47,84 +38,70 @@
         }
 
         #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
-        .leaflet-control-zoom { display: none !important; }
 
-        #zoom-controls {
-            position: absolute; top: 10px; left: 10px; z-index: 1000;
-            display: flex; flex-direction: column; gap: 5px;
-        }
-        .zoom-btn {
-            width: 35px; height: 35px; background: rgba(0,0,0,0.8);
-            border: 1px solid #f1c40f; color: #f1c40f; cursor: pointer;
-            font-size: 20px; font-weight: bold;
-        }
-
-        /* 3. PALETA DERECHA */
+        /* PALETA DERECHA */
         #palette {
             background-color: #1a1a1a;
-            border-left: 1px solid #3d3d3d;
+            border-left: 2px solid #3d3d3d;
             padding: 15px;
             display: flex; flex-direction: column;
             overflow-y: auto;
             z-index: 2000;
         }
 
-        /* SELECTOR DE MODO */
-        .map-mode-selector {
-            display: flex; flex-direction: column; align-items: center;
-            background: #2a1f14; padding: 10px; border-radius: 4px;
-            margin-bottom: 15px; border: 1px solid #b8860b;
+        /* ESTILO DEL SELECTOR DE MODO */
+        .mode-container {
+            background: #2a1f14;
+            padding: 12px;
+            border: 1px solid #b8860b;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
         }
-        #mode-label { font-size: 10px; color: #f1c40f; margin-bottom: 8px; font-weight: bold; }
 
-        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        #mode-label { 
+            font-size: 11px; 
+            color: #f1c40f; 
+            margin-bottom: 10px; 
+            font-weight: bold;
+            display: block;
+        }
+
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #555; transition: .4s; border-radius: 20px;
+            background-color: #444; transition: .4s; border-radius: 24px;
         }
         .slider:before {
-            position: absolute; content: ""; height: 16px; width: 16px;
+            position: absolute; content: ""; height: 18px; width: 18px;
             left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
         }
-        input:checked + .slider { background-color: #33d1ff; }
-        input:checked + .slider:before { transform: translateX(22px); }
+        input:checked + .slider { background-color: #0088cc; }
+        input:checked + .slider:before { transform: translateX(26px); }
 
-        .palette-title {
-            color: #f1c40f; text-align: center; font-size: 11px;
-            margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px;
+        .palette-title { color: #f1c40f; text-align: center; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid #333; }
+        
+        #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .icon-btn { 
+            width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; 
+            display: flex; justify-content: center; align-items: center; cursor: pointer; 
         }
+        .icon-btn img { width: 40px; height: 40px; }
+        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
 
-        #icon-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 8px; margin-bottom: 20px;
-        }
-
-        .icon-btn {
-            width: 80px; height: 60px; background-color: #262626;
-            border: 1px solid #3d3d3d; border-radius: 4px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer;
-        }
-        .icon-btn img { width: 40px; height: 40px; object-fit: contain; }
-        .icon-btn:hover { border-color: #f1c40f; }
-
-        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
         .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
         .color-dot.active { border: 2px solid #f1c40f; transform: scale(1.1); }
 
-        .action-btn {
-            background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b;
-            width: 100%; padding: 10px; margin-top: 15px; cursor: pointer;
-            font-size: 10px; font-weight: bold;
-        }
-        #coords { text-align: center; color: #888; font-size: 10px; margin-top: 10px; }
+        .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 10px; margin-top: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
 
-        /* MARCADORES Y POPUPS */
+        /* MARCADORES */
         .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
-        .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; background: rgba(0, 0, 0, 0.3); position: absolute; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .marker-icon-img { width: 28px; height: 28px; z-index: 2; object-fit: contain; }
+        .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
+        .marker-icon-img { width: 26px; height: 26px; z-index: 2; }
 
+        /* POPUPS */
         .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
         .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
@@ -136,17 +113,13 @@
     <div id="main-container">
         <div id="map-area">
             <div id="war-table">
-                <div id="zoom-controls">
-                    <button class="zoom-btn" onclick="map.zoomIn()">+</button>
-                    <button class="zoom-btn" onclick="map.zoomOut()">-</button>
-                </div>
                 <div id="map"></div>
             </div>
         </div>
 
         <div id="palette">
-            <div class="map-mode-selector">
-                <div id="mode-label">MODO: LOCAL</div>
+            <div class="mode-container">
+                <span id="mode-label">MODO: LOCAL</span>
                 <label class="switch">
                     <input type="checkbox" id="mode-toggle">
                     <span class="slider"></span>
@@ -156,154 +129,141 @@
             <div class="palette-title">MAESTRO CARTÓGRAFO</div>
             
             <div id="icon-grid">
-                <div class="icon-btn" title="Coal"><img src="assets/iconos/coal.png"></div>
-                <div class="icon-btn" title="Copper"><img src="assets/iconos/copper.png"></div>
-                <div class="icon-btn" title="Iron"><img src="assets/iconos/iron.png"></div>
-                <div class="icon-btn" title="Wood"><img src="assets/iconos/wood.png"></div>
-                <div class="icon-btn" title="Resin"><img src="assets/iconos/resin.png"></div>
-                <div class="icon-btn" title="Water"><img src="assets/iconos/water.png"></div>
-                <div class="icon-btn" title="Rum"><img src="assets/iconos/rum.png"></div>
-                <div class="icon-btn" title="Port"><img src="assets/iconos/port.png"></div>
-                <div class="icon-btn" title="City"><img src="assets/iconos/city.png"></div>
-                <div class="icon-btn" title="Pirate City"><img src="assets/iconos/pirate-city.png"></div>
-                <div class="icon-btn" title="Fort"><img src="assets/iconos/fort.png"></div>
-                <div class="icon-btn" title="Lighthouse"><img src="assets/iconos/lighthouse.png"></div>
-                <div class="icon-btn" title="Fishing Village"><img src="assets/iconos/fishing-village.png"></div>
-                <div class="icon-btn" title="Farm"><img src="assets/iconos/farm.png"></div>
-                <div class="icon-btn" title="Altar"><img src="assets/iconos/altar.png"></div>
-                <div class="icon-btn" title="Island"><img src="assets/iconos/island.png"></div>
-                <div class="icon-btn" title="Bay"><img src="assets/iconos/bay.png"></div>
-                <div class="icon-btn" title="Printshop"><img src="assets/iconos/printshop.png"></div>
-                <div class="icon-btn" title="POI"><img src="assets/iconos/points-of-interest.png"></div>
-                <div class="icon-btn" title="Text"><img src="assets/iconos/text-mark.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
             </div>
 
             <div class="color-selector">
-                <div class="color-dot" style="background-color: white;"></div>
-                <div class="color-dot" style="background-color: #33d1ff;"></div>
-                <div class="color-dot" style="background-color: #ff33d1;"></div>
-                <div class="color-dot" style="background-color: #33ff4d;"></div>
+                <div class="color-dot" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
+                <div class="color-dot" style="background-color: #33d1ff;" onclick="seleccionarColor(this, '#33d1ff')"></div>
+                <div class="color-dot" style="background-color: #ff33d1;" onclick="seleccionarColor(this, '#ff33d1')"></div>
+                <div class="color-dot" style="background-color: #33ff4d;" onclick="seleccionarColor(this, '#33ff4d')"></div>
             </div>
 
-            <button class="action-btn" id="btn-clear">LIMPIAR CAPA ACTUAL</button>
-            <div id="coords">X: 0 | Y: 0</div>
+            <button class="action-btn" onclick="limpiarCapaActual()">LIMPIAR CAPA</button>
         </div>
     </div>
 
     <script>
-        // 1. INICIALIZACIÓN DEL MAPA
-        var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, zoomSnap: 0.1, attributionControl: false });
-        var bounds = [[0, 0], [1000, 1300]]; 
-        L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
-        map.fitBounds(bounds);
-
-        // 2. CAPAS Y ESTADO
-        var capaLocal = L.layerGroup().addTo(map);
-        var capaGremio = L.layerGroup();
+        // VARIABLES GLOBALES
+        var map, capaLocal, capaGremio;
+        var iconoActual = null;
+        var colorActual = 'white';
         var modoGremio = false;
-        var iconoSeleccionado = null;
-        var colorSeleccionado = 'white';
 
-        // 3. CARGAR DATOS GUARDADOS
-        cargarMapa();
+        // ESPERAR A QUE CARGUE TODO EL HTML
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 1. Iniciar Mapa
+            map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, attributionControl: false });
+            var bounds = [[0, 0], [1000, 1300]];
+            L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
+            map.fitBounds(bounds);
 
-        // 4. EVENTOS DE LA PALETA
-        document.querySelectorAll('.icon-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.icon-btn').forEach(b => b.style.borderColor = '#3d3d3d');
-                this.style.borderColor = '#f1c40f';
-                iconoSeleccionado = this.querySelector('img').src;
+            // 2. Iniciar Capas
+            capaLocal = L.layerGroup().addTo(map);
+            capaGremio = L.layerGroup();
+
+            // 3. Lógica del Switch de Modo
+            document.getElementById('mode-toggle').addEventListener('change', function() {
+                modoGremio = this.checked;
+                const label = document.getElementById('mode-label');
+                
+                if (modoGremio) {
+                    label.innerText = "MODO: GREMIO";
+                    label.style.color = "#33d1ff";
+                    map.addLayer(capaGremio);
+                    map.removeLayer(capaLocal);
+                } else {
+                    label.innerText = "MODO: LOCAL";
+                    label.style.color = "#f1c40f";
+                    map.addLayer(capaLocal);
+                    map.removeLayer(capaGremio);
+                }
+            });
+
+            // 4. Cargar datos guardados
+            cargarMemoria();
+
+            // 5. Clic derecho para poner iconos
+            map.on('contextmenu', function(e) {
+                if (!iconoActual) return alert("Selecciona un icono primero");
+
+                const capaActiva = modoGremio ? capaGremio : capaLocal;
+                crearMarcadorEnMapa(e.latlng, iconoActual, colorActual, capaActiva);
+                guardarMemoria();
             });
         });
 
-        document.querySelectorAll('.color-dot').forEach(dot => {
-            dot.addEventListener('click', function() {
-                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-                this.classList.add('active');
-                colorSeleccionado = this.style.backgroundColor;
-            });
-        });
+        // FUNCIONES DE APOYO
+        function seleccionarIcono(elemento, ruta) {
+            document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
+            elemento.classList.add('selected');
+            iconoActual = ruta;
+        }
 
-        // Cambio de Modo (Local/Gremio)
-        document.getElementById('mode-toggle').onchange = function() {
-            modoGremio = this.checked;
-            const label = document.getElementById('mode-label');
-            if (modoGremio) {
-                label.innerText = "MODO: GREMIO"; label.style.color = "#33d1ff";
-                map.addLayer(capaGremio); map.removeLayer(capaLocal);
-            } else {
-                label.innerText = "MODO: LOCAL"; label.style.color = "#f1c40f";
-                map.addLayer(capaLocal); map.removeLayer(capaGremio);
-            }
-        };
+        function seleccionarColor(elemento, color) {
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            elemento.classList.add('active');
+            colorActual = color;
+        }
 
-        // 5. LÓGICA DE MARCADO (Clic Derecho)
-        map.on('contextmenu', function(e) {
-            if (!iconoSeleccionado) { alert("¡Capitán! Seleccione un icono."); return; }
-
-            const htmlMarcador = `
+        function crearMarcadorEnMapa(posicion, imgRuta, color, capa) {
+            const html = `
                 <div class="custom-marker-container">
-                    <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
-                    <img src="${iconoSeleccionado}" class="marker-icon-img">
+                    <div class="marker-circle" style="border-color: ${color}"></div>
+                    <img src="${imgRuta}" class="marker-icon-img">
                 </div>`;
-
-            const icon = L.divIcon({ html: htmlMarcador, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-            const capaActiva = modoGremio ? capaGremio : capaLocal;
             
-            const m = L.marker(e.latlng, { icon: icon }).addTo(capaActiva);
-            vincularMenu(m, capaActiva);
-            guardarMapa();
-        });
-
-        function vincularMenu(m, capa) {
+            const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+            const m = L.marker(posicion, { icon: icon }).addTo(capa);
+            
+            // Añadir menú al marcador
             const menu = L.DomUtil.create('div', 'popup-menu');
-            
-            const btnMercado = L.DomUtil.create('button', 'popup-btn', menu);
-            btnMercado.innerHTML = "VER MERCADO";
-            btnMercado.onclick = () => alert("Abriendo registros comerciales...");
-
             const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-            btnBorrar.innerHTML = "ELIMINAR";
-            btnBorrar.onclick = () => { capa.removeLayer(m); guardarMapa(); };
-
+            btnBorrar.innerHTML = "BORRAR";
+            btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
             m.bindPopup(menu);
         }
 
-        // 6. PERSISTENCIA (LocalStorage)
-        function guardarMapa() {
+        function guardarMemoria() {
             const extraer = (capa) => {
                 let res = [];
                 capa.eachLayer(l => res.push({ latlng: l.getLatLng(), html: l.options.icon.options.html }));
                 return res;
             };
-            localStorage.setItem('wsb_local', JSON.stringify(extraer(capaLocal)));
-            localStorage.setItem('wsb_gremio', JSON.stringify(extraer(capaGremio)));
+            localStorage.setItem('wsb_v2_local', JSON.stringify(extraer(capaLocal)));
+            localStorage.setItem('wsb_v2_gremio', JSON.stringify(extraer(capaGremio)));
         }
 
-        function cargarMapa() {
+        function cargarMemoria() {
             const reconstruir = (key, capa) => {
                 const datos = JSON.parse(localStorage.getItem(key) || "[]");
                 datos.forEach(d => {
                     const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
                     const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
-                    vincularMenu(m, capa);
+                    
+                    const menu = L.DomUtil.create('div', 'popup-menu');
+                    const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
+                    btnBorrar.innerHTML = "BORRAR";
+                    btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
+                    m.bindPopup(menu);
                 });
             };
-            reconstruir('wsb_local', capaLocal);
-            reconstruir('wsb_gremio', capaGremio);
+            reconstruir('wsb_v2_local', capaLocal);
+            reconstruir('wsb_v2_gremio', capaGremio);
         }
 
-        // 7. UTILIDADES
-        document.getElementById('btn-clear').onclick = () => {
-            if(confirm("¿Borrar todos los marcadores de esta capa?")) {
+        function limpiarCapaActual() {
+            if(confirm("¿Borrar todo lo de esta capa?")) {
                 modoGremio ? capaGremio.clearLayers() : capaLocal.clearLayers();
-                guardarMapa();
+                guardarMemoria();
             }
-        };
-
-        map.on('mousemove', e => {
-            document.getElementById('coords').innerHTML = `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
-        });
+        }
     </script>
 </body>
 </html>
