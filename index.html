@@ -62,31 +62,24 @@ select,input,textarea{
     padding:3px;
     font-size:11px;
 }
-
-.ruta-flow {
-    stroke-dasharray: 10, 10;
-    animation: flow 2s linear infinite;
-}
-
-@keyframes flow {
-    0% { stroke-dashoffset: 20; }
-    100% { stroke-dashoffset: 0; }
-}
 </style>
 </head>
 <body>
 
 <div class="ui-panel">
 
+<div class="section-title">👤 USUARIO</div>
+<input type="text" id="usuario" placeholder="Nombre de Usuario" onchange="cambiarUsuario()">
+<p style="font-size:10px;">Cambia para cargar datos personales</p>
+
 <div class="section-title">⚓ MODO</div>
 <button class="boton-ui" onclick="togglePersonal()">Mostrar/Ocultar Personal</button>
-<button class="boton-ui" onclick="activarModoRuta()">Modo Ruta</button>
 <button class="boton-ui" onclick="activarModoZona()">Modo Zona Peligrosa</button>
 <button class="boton-ui" onclick="guardarZonaActual()">Guardar Zona</button>
-<button class="boton-ui" onclick="animarUltimaRuta()">Animar Última Ruta</button>
-<button class="boton-ui" onclick="detenerAnimacion()">Detener Animación</button>
 <button class="boton-ui" onclick="calcularGanancia()">Calcular Ganancia</button>
 <button class="boton-ui" onclick="planificarRutaOptima()">Planificar Ruta Óptima</button>
+<button class="boton-ui" onclick="rutaSegura()">Planificar Ruta Segura</button>
+<button class="boton-ui" onclick="calcularTiempo()">Calcular Tiempo de Viaje</button>
 <button class="boton-ui" onclick="exportarDatos()">Exportar Local</button>
 <button class="boton-ui" onclick="resetPersonal()" style="color:#e74c3c;border-color:#e74c3c;">Reset Personal</button>
 
@@ -131,8 +124,18 @@ select,input,textarea{
 <script>
 
 // ======================
-// CONFIG MAPA
+// USUARIO
 // ======================
+
+var usuarioActual = localStorage.getItem('wsb_usuario') || 'default';
+
+function cambiarUsuario(){
+    usuarioActual = document.getElementById('usuario').value || 'default';
+    localStorage.setItem('wsb_usuario', usuarioActual);
+    location.reload(); // Recargar para cargar datos del nuevo usuario
+}
+
+document.getElementById('usuario').value = usuarioActual;
 
 var map = L.map('map',{
     crs:L.CRS.Simple,
@@ -172,14 +175,14 @@ var iconos={
 // STORAGE
 // ======================
 
-var datosPersonal=JSON.parse(localStorage.getItem('wsb_personal_v2'))||[];
-var rutasPersonal=JSON.parse(localStorage.getItem('wsb_rutas_v2'))||[];
-var zonasPersonal=JSON.parse(localStorage.getItem('wsb_zonas_v2'))||[];
+var datosPersonal=JSON.parse(localStorage.getItem('wsb_' + usuarioActual + '_personal_v2'))||[];
+var rutasPersonal=JSON.parse(localStorage.getItem('wsb_' + usuarioActual + '_rutas_v2'))||[];
+var zonasPersonal=JSON.parse(localStorage.getItem('wsb_' + usuarioActual + '_zonas_v2'))||[];
 
 function guardar(){
-    localStorage.setItem('wsb_personal_v2',JSON.stringify(datosPersonal));
-    localStorage.setItem('wsb_rutas_v2',JSON.stringify(rutasPersonal));
-    localStorage.setItem('wsb_zonas_v2',JSON.stringify(zonasPersonal));
+    localStorage.setItem('wsb_' + usuarioActual + '_personal_v2',JSON.stringify(datosPersonal));
+    localStorage.setItem('wsb_' + usuarioActual + '_rutas_v2',JSON.stringify(rutasPersonal));
+    localStorage.setItem('wsb_' + usuarioActual + '_zonas_v2',JSON.stringify(zonasPersonal));
 }
 
 // ======================
@@ -237,10 +240,6 @@ map.on("contextmenu",function(e){
 
 // ======================
 // RUTAS
-// ======================
-
-// ======================
-// RUTAS (VERSIÓN CORREGIDA)
 // ======================
 
 var modoRuta = false;
@@ -373,63 +372,68 @@ function suavizarRuta(puntos){
     return nueva;
 }
 
-// ======================
-// ANIMACION RUTA - EFECTO FLOW
-// ======================
-
-var animacionActiva = false;
-var rutaAnimada = null;
-
-function animarUltimaRuta(){
-
-    if(rutasDibujadas.length === 0){
-        alert("No hay rutas guardadas");
-        return;
-    }
-
-    // Detener animación anterior si existe
-    detenerAnimacion();
-
-    rutaAnimada = rutasDibujadas[rutasDibujadas.length - 1];
-    rutaAnimada.setStyle({className: 'ruta-flow'});
-    animacionActiva = true;
-}
-
-function planificarRutaOptima(){
-    if(datosPersonal.length < 2){
-        alert("Necesitas al menos 2 puertos marcados");
+function rutaSegura(){
+    if(datosPersonal.length < 2 || zonasPersonal.length === 0){
+        alert("Necesitas puertos marcados y zonas peligrosas");
         return;
     }
 
     let puertos = datosPersonal.filter(d => d.tipo === 'port');
-    if(puertos.length < 2){
-        alert("Necesitas al menos 2 puertos");
-        return;
-    }
+    if(puertos.length < 2) return;
 
-    // Algoritmo simple: encontrar la ruta más corta entre todos los puertos
+    // Algoritmo simple: evitar rutas que crucen zonas peligrosas
     let mejorRuta = [];
-    let menorDistancia = Infinity;
+    let menorRiesgo = Infinity;
 
-    // Para simplicidad, conectar todos en orden
     for(let i = 0; i < puertos.length - 1; i++){
-        let dist = map.distance(puertos[i].latlng, puertos[i+1].latlng);
-        if(dist < menorDistancia){
-            menorDistancia = dist;
+        let p1 = puertos[i].latlng;
+        let p2 = puertos[i+1].latlng;
+        let riesgo = 0;
+
+        // Calcular si la línea cruza alguna zona
+        zonasPersonal.forEach(zona => {
+            let poly = L.polygon(zona.map(p => L.latLng(p.lat, p.lng)));
+            if(poly.getBounds().contains(p1) || poly.getBounds().contains(p2)){
+                riesgo += 10; // Penalización
+            }
+        });
+
+        if(riesgo < menorRiesgo){
+            menorRiesgo = riesgo;
             mejorRuta = [puertos[i], puertos[i+1]];
         }
     }
 
     if(mejorRuta.length === 2){
-        let rutaOptima = [mejorRuta[0].latlng, mejorRuta[1].latlng];
-        rutasPersonal.push(rutaOptima.map(p => ({lat: p.lat, lng: p.lng})));
+        let rutaSegura = [mejorRuta[0].latlng, mejorRuta[1].latlng];
+        rutasPersonal.push(rutaSegura.map(p => ({lat: p.lat, lng: p.lng})));
         guardar();
 
-        let rutaLayer = L.polyline(rutaOptima, {color: 'green', weight: 4}).addTo(capaRutas);
+        let rutaLayer = L.polyline(rutaSegura, {color: 'yellow', weight: 4}).addTo(capaRutas);
         rutasDibujadas.push(rutaLayer);
 
-        alert(`Ruta óptima planificada entre ${mejorRuta[0].nombre} y ${mejorRuta[1].nombre}`);
+        alert(`Ruta segura planificada entre ${mejorRuta[0].nombre} y ${mejorRuta[1].nombre}`);
     }
+}
+
+function calcularTiempo(){
+    if(rutasPersonal.length === 0){
+        alert("No hay rutas guardadas");
+        return;
+    }
+
+    let ruta = rutasPersonal[rutasPersonal.length - 1];
+    let distanciaTotal = 0;
+
+    for(let i = 0; i < ruta.length - 1; i++){
+        let p1 = L.latLng(ruta[i].lat, ruta[i].lng);
+        let p2 = L.latLng(ruta[i+1].lat, ruta[i+1].lng);
+        distanciaTotal += map.distance(p1, p2);
+    }
+
+    // Estimar tiempo: asumir velocidad promedio de 10 km/h en el juego
+    let tiempoHoras = distanciaTotal / 10000; // Ajustar escala
+    alert(`Distancia total: ${distanciaTotal.toFixed(0)} unidades\nTiempo estimado: ${tiempoHoras.toFixed(1)} horas`);
 }
 
 // ======================
@@ -455,8 +459,10 @@ function togglePersonal(){
 }
 
 function resetPersonal(){
-    if(confirm("Seguro? Esto borrará todas las marcas, rutas y zonas.")){
-        localStorage.clear();
+    if(confirm("Seguro? Esto borrará todas las marcas, rutas y zonas del usuario actual.")){
+        localStorage.removeItem('wsb_' + usuarioActual + '_personal_v2');
+        localStorage.removeItem('wsb_' + usuarioActual + '_rutas_v2');
+        localStorage.removeItem('wsb_' + usuarioActual + '_zonas_v2');
         location.reload();
     }
 }
