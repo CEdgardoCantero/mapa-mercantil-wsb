@@ -221,24 +221,26 @@ map.on("contextmenu",function(e){
 // ======================
 
 // ======================
-// RUTAS
+// RUTAS (VERSIÓN CORREGIDA)
 // ======================
 
-var modoRuta=false;
-var rutaActual=[];
-var polyActual=null;
+var modoRuta = false;
+var rutaActual = [];
+var polyActual = null;
 
 function activarModoRuta(){
-    modoRuta=!modoRuta;
-    rutaActual=[];
+    modoRuta = true;
+    rutaActual = [];
+    
     if(polyActual){
         capaRutas.removeLayer(polyActual);
-        polyActual=null;
+        polyActual = null;
     }
-    alert(modoRuta?"Modo Ruta ACTIVADO (haz click para marcar puntos)":"Modo Ruta DESACTIVADO");
+
+    alert("Modo Ruta ACTIVADO - Haz click para marcar puntos");
 }
 
-map.on("click",function(e){
+map.on("click", function(e){
 
     if(!modoRuta) return;
 
@@ -248,29 +250,50 @@ map.on("click",function(e){
         capaRutas.removeLayer(polyActual);
     }
 
-    polyActual=L.polyline(rutaActual,{color:'cyan'}).addTo(capaRutas);
+    polyActual = L.polyline(rutaActual, {
+        color: 'cyan',
+        weight: 3
+    }).addTo(capaRutas);
 });
 
 function guardarRutaActual(){
 
-    if(rutaActual.length < 2){
-        alert("Necesitas al menos 2 puntos para guardar una ruta");
+    if(!modoRuta){
+        alert("Activa primero el Modo Ruta");
         return;
     }
 
-    rutasPersonal.push([...rutaActual]);
+    if(rutaActual.length < 2){
+        alert("Necesitas al menos 2 puntos");
+        return;
+    }
+
+    // Copia profunda real
+    let copiaRuta = rutaActual.map(p => ({lat: p.lat, lng: p.lng}));
+
+    rutasPersonal.push(copiaRuta);
+
     guardar();
+
+    console.log("Ruta guardada:", rutasPersonal);
 
     alert("Ruta guardada correctamente");
 
-    rutaActual=[];
-    polyActual=null;
-    modoRuta=false;
+    // Reset
+    modoRuta = false;
+    rutaActual = [];
+    polyActual = null;
 }
 
 // Dibujar rutas guardadas al iniciar
-rutasPersonal.forEach(r=>{
-    L.polyline(r,{color:'cyan'}).addTo(capaRutas);
+rutasPersonal.forEach(r => {
+
+    let reconstruida = r.map(p => L.latLng(p.lat, p.lng));
+
+    L.polyline(reconstruida, {
+        color:'cyan',
+        weight:3
+    }).addTo(capaRutas);
 });
 
 // ======================
