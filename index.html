@@ -1,51 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estrategia Naval - Gremio WSB</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
-        #map { height: 100vh; width: 100%; background: #1a1a1a; }
-        
-        .ui-panel {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(15, 15, 15, 0.9); border: 2px solid #f1c40f;
-            padding: 15px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            max-width: 200px;
-        }
-
-        .section-title { border-bottom: 1px solid #f1c40f; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
-        
-        .boton-ui {
-            background: transparent; color: #f1c40f; border: 1px solid #f1c40f;
-            padding: 5px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 11px;
-        }
-        .boton-ui:hover { background: #f1c40f; color: black; }
-        .boton-borrar { color: #e74c3c; border-color: #e74c3c; }
-
-        /* Estilo para distinguir tipos de iconos */
-        .port-card { text-align: center; min-width: 140px; }
-    </style>
-</head>
-<body>
-
-    <div class="ui-panel">
-        <div class="section-title">⚓ DATOS DEL GREMIO</div>
-        <p style="font-size: 10px;">Actualizado desde Excel central</p>
-        
-        <div class="section-title" style="margin-top:15px;">📜 MI BITÁCORA</div>
-        <button class="boton-ui" onclick="togglePersonal()">MOSTRAR/OCULTAR MIS PUNTOS</button>
-        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MI MAPA</button>
-    </div>
-
-    <div id="map"></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
-    <script>
+<script>
         // 1. CONFIGURACIÓN DEL MAPA
         var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
         var bounds = [[0, 0], [1500, 2000]];
@@ -63,11 +16,11 @@
         });
 
         var iconoPersonal = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/10627/10627113.png', // Icono de brújula/punto
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/10627/10627113.png', 
             iconSize: [25, 25], iconAnchor: [12, 12]
         });
 
-        // 3. CARGA DESDE GOOGLE SHEETS (PARA EL GREMIO)
+        // 3. CARGA DESDE GOOGLE SHEETS
         const googleSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQqSCUDEKeGxbn1VQ2lObyN8hoNG-6uRRbqHleytYUih-7RJgu46RAqEKG_tIzIVcKeSecn5iTRRzvb/pub?gid=0&single=true&output=csv'; 
 
         Papa.parse(googleSheetURL, {
@@ -77,14 +30,11 @@
             complete: function(results) {
                 console.log("Cargando datos del Gremio...");
                 results.data.forEach(fila => {
-                    // Detectamos las columnas del Excel
                     let val1 = parseFloat(fila.CoordenadaX || fila.x || fila.X);
                     let val2 = parseFloat(fila.CoordenadaY || fila.y || fila.Y);
                     let puerto = fila.Puerto || "Puerto";
 
                     if (!isNaN(val1) && !isNaN(val2)) {
-                        // PRUEBA: Si tu mapa es de 2000x1500, Leaflet espera [Vertical, Horizontal]
-                        // Si no aparecen, cambia el orden a [val2, val1]
                         L.marker([val1, val2], {icon: iconoGremio}).addTo(capaGremio)
                          .bindPopup(`
                             <div class="port-card">
@@ -96,8 +46,7 @@
                     }
                 });
             }
-            }
-        });
+        }); // <-- Aquí estaba el error de la llave extra
 
         // 4. SISTEMA PERSONAL (LOCALSTORAGE)
         var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
@@ -118,10 +67,19 @@
                     <button class="boton-ui" style="color:red;" onclick="borrarPunto(${id})">ELIMINAR</button>
                 </div>
             `);
-            m.on('dragend', function() { actualizarPosicion(id, m.getLatLng()); });
         }
 
         // 5. INTERACCIÓN
+        // Coordenadas con Clic Izquierdo (Para que sepas donde estas)
+        var coordPopup = L.popup();
+        map.on('click', function(e) {
+            coordPopup
+                .setLatLng(e.latlng)
+                .setContent("X: " + e.latlng.lat.toFixed(0) + " | Y: " + e.latlng.lng.toFixed(0))
+                .openOn(map);
+        });
+
+        // Marca Personal con Clic Derecho
         map.on('contextmenu', function(e) {
             let nota = prompt("Nombre del punto personal:");
             if (nota !== null) {
@@ -148,10 +106,8 @@
         function borrarPunto(id) {
             misPuntos.splice(id, 1);
             localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
-            location.reload(); // Recarga simple para limpiar el mapa
+            location.reload();
         }
 
         cargarPersonales();
     </script>
-</body>
-</html>
