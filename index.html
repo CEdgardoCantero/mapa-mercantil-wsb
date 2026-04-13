@@ -62,38 +62,43 @@
         }
 
         /* 3. PALETA DE HERRAMIENTAS (Barra Derecha) */
-        #palette {
-            background-color: #1a1a1a;
-            border-left: 1px solid #3d3d3d;
-            padding: 20px;
-            display: flex; flex-direction: column;
-            overflow-y: auto;
-        }
+        /* 1. Reducimos el ancho de la paleta lateral */
+#palette {
+    background-color: #1a1a1a;
+    border-left: 1px solid #3d3d3d;
+    padding: 15px; /* Menos relleno para ganar espacio */
+    width: 180px; /* Ancho más compacto */
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+}
 
-        .palette-title {
-            color: #f1c40f; text-align: center; font-weight: bold;
-            margin-bottom: 20px; text-transform: uppercase;
-            font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 5px;
-        }
+/* 2. Ajustamos la grilla para que los iconos no se estiren */
+#icon-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 8px; /* Espaciado más fino */
+    margin-bottom: 20px;
+}
 
-        /* Grilla de Iconos (Exactamente igual que referencia) */
-        #icon-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 columnas */
-            gap: 15px; margin-bottom: 30px;
-        }
+/* 3. Reducimos el tamaño de los botones de icono */
+.icon-btn {
+    width: 60px; /* Tamaño fijo más pequeño */
+    height: 60px;
+    background-color: #262626;
+    border: 1px solid #3d3d3d;
+    border-radius: 4px;
+    display: flex; justify-content: center; align-items: center;
+    cursor: pointer;
+    margin: 0 auto; /* Centrar en su celda */
+}
 
-        .icon-btn {
-            aspect-ratio: 1/1; /* Cuadrado */
-            background-color: #262626;
-            border: 2px solid #3d3d3d;
-            border-radius: 4px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .icon-btn:hover { border-color: #f1c40f; background-color: #333; }
-        .icon-btn img { width: 80%; height: 80%; object-fit: contain; image-rendering: pixelated; }
+/* 4. Evitamos que el icono se pixele al redimensionar */
+.icon-btn img { 
+    width: 40px; /* Tamaño original para que se vea nítido */
+    height: 40px; 
+    object-fit: contain; 
+    image-rendering: auto; /* Cambiar a pixelated solo si quieres estilo retro */
+}
 
         /* Controles Inferiores (Exactamente igual que referencia) */
         .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: auto; margin-bottom: 10px; }
