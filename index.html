@@ -3,152 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartografía Naval - Gremio WSB</title>
+    <title>Mesa de Guerra - Gremio WSB</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
-        #map { height: 100vh; width: 100%; background: #1a1a1a; cursor: crosshair; }
-        
-        /* Panel Estilo Pergamino */
-        .ui-panel {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(25, 20, 10, 0.95); border: 2px solid #b8860b;
-            padding: 15px; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.8);
-            width: 220px;
+        /* Fondo de Agua Animada */
+        body { 
+            margin: 0; padding: 0; 
+            background-color: #00121a;
+            background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png'); /* Textura sutil */
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            perspective: 1200px; /* Necesario para el efecto 3D */
         }
 
-        .section-title { border-bottom: 2px dashed #b8860b; margin-bottom: 10px; font-weight: bold; text-align: center; }
-        
+        /* Animación del Agua de fondo */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%; height: 200%;
+            background: url('https://img.freepik.com/vector-gratis/patron-ondas-agua-azul-estilo-plano_23-2147710313.jpg?size=626&ext=jpg');
+            background-repeat: repeat;
+            opacity: 0.1;
+            animation: oleaje 60s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes oleaje {
+            from { transform: translate(0, 0); }
+            to { transform: translate(-50%, -50%); }
+        }
+
+        /* Contenedor del Mapa con inclinación 3D */
+        #map-container {
+            width: 90vw;
+            height: 85vh;
+            transform: rotateX(20deg) rotateZ(-1deg); /* Aquí controlas la inclinación */
+            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+            border: 10px solid #3d2b1f;
+            border-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            background: #1a1a1a;
+            overflow: hidden;
+            transition: transform 0.5s ease;
+        }
+
+        #map { height: 100%; width: 100%; background: transparent; }
+
+        /* Panel UI */
+        .ui-panel {
+            position: absolute; top: 20px; right: 20px; z-index: 2000;
+            background: rgba(20, 15, 5, 0.9); border: 2px solid #b8860b;
+            padding: 15px; border-radius: 5px; color: #f1c40f; font-family: 'Courier New', monospace;
+        }
+
         .boton-ui {
             background: #332b1a; color: #f1c40f; border: 1px solid #b8860b;
-            padding: 8px; cursor: pointer; width: 100%; margin-bottom: 5px;
-            font-size: 12px; font-weight: bold;
+            padding: 8px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold;
         }
-        .boton-ui:hover { background: #f1c40f; color: black; }
-        
-        /* Estilo de los Popups */
-        .menu-creacion button { display: block; width: 100%; margin: 5px 0; padding: 5px; cursor: pointer; background: #222; color: #eee; border: 1px solid #555; text-align: left; }
-        .menu-creacion button:hover { background: #444; }
+
+        /* Ajuste para que los Popups no salgan inclinados (opcional) */
+        .leaflet-popup-content-wrapper { transform: rotateX(-10deg); }
     </style>
 </head>
 <body>
 
     <div class="ui-panel">
-        <div class="section-title">🛠️ MAESTRO CARTÓGRAFO</div>
-        <p style="font-size: 11px; text-align: center;">Click derecho en el mar para colocar un objeto.</p>
-        <button class="boton-ui" onclick="exportarDatos()">📥 EXPORTAR MAPA (Log)</button>
-        <button class="boton-ui" style="color: #ff4d4d; border-color: #ff4d4d;" onclick="borrarTodo()">🧹 LIMPIAR TODO</button>
-        <hr border="1">
-        <div id="coordenadas-live" style="font-size: 10px; text-align: center; color: #888;">X: 0 | Y: 0</div>
+        <div style="text-align:center; font-weight:bold; border-bottom: 1px solid #b8860b; margin-bottom:10px;">CARTA NÁUTICA</div>
+        <button class="boton-ui" onclick="borrarTodo()">LIMPIAR MAPA</button>
+        <div id="coordenadas" style="font-size: 10px; margin-top:10px; text-align:center;">X: 0 | Y: 0</div>
     </div>
 
-    <div id="map"></div>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. INICIALIZACIÓN
         var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
         var bounds = [[0, 0], [1500, 2000]];
         L.imageOverlay('mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // 2. CATÁLOGO DE ICONOS (Añade los que quieras aquí)
+        // --- CATALOGO DE ICONOS ---
+        // Aquí es donde agregarás tu pack de iconos más adelante
         var catalogo = {
-            puerto: { nombre: "Puerto Aliado", icon: "https://cdn-icons-png.flaticon.com/512/2942/2942023.png" },
-            enemigo: { nombre: "Puerto Enemigo", icon: "https://cdn-icons-png.flaticon.com/512/10563/10563236.png" },
-            tesoro: { nombre: "Naufragio/Tesoro", icon: "https://cdn-icons-png.flaticon.com/512/4150/4150371.png" },
-            peligro: { nombre: "Zona de Peligro", icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png" }
+            puerto: { n: "Puerto Aliado", i: "https://cdn-icons-png.flaticon.com/512/2942/2942023.png" },
+            fuerte: { n: "Fuerte Militar", i: "https://cdn-icons-png.flaticon.com/512/3233/3233857.png" },
+            pirata: { n: "Base Pirata", i: "https://cdn-icons-png.flaticon.com/512/10563/10563236.png" },
+            peligro: { n: "Zona de Peligro", i: "https://cdn-icons-png.flaticon.com/512/564/564619.png" }
         };
 
-        // 3. CARGA DE MEMORIA
-        var marcadoresEnMapa = JSON.parse(localStorage.getItem('mapa_wsb_persistente')) || [];
+        var misPuntos = JSON.parse(localStorage.getItem('mapa_wsb_v3')) || [];
 
-        function renderizarMapa() {
+        function renderizar() {
             map.eachLayer(l => { if(l instanceof L.Marker) map.removeLayer(l); });
-            marcadoresEnMapa.forEach((m, index) => {
-                crearMarcadorFisico(m.latlng, m.tipo, m.nota, index);
+            misPuntos.forEach((p, idx) => {
+                var icono = L.icon({ iconUrl: catalogo[p.t].i, iconSize: [32, 32], iconAnchor: [16, 32] });
+                L.marker(p.l, {icon: icono, draggable: true}).addTo(map)
+                .bindPopup(`<b>${p.n}</b><br><button onclick="eliminar(${idx})">Eliminar</button>`)
+                .on('dragend', function(e) {
+                    misPuntos[idx].l = e.target.getLatLng();
+                    localStorage.setItem('mapa_wsb_v3', JSON.stringify(misPuntos));
+                });
             });
         }
 
-        function crearMarcadorFisico(latlng, tipo, nota, id) {
-            var iconoConfig = L.icon({
-                iconUrl: catalogo[tipo].icon,
-                iconSize: [32, 32], iconAnchor: [16, 32]
-            });
-
-            var m = L.marker(latlng, { icon: iconoConfig, draggable: true }).addTo(map);
-            
-            m.bindPopup(`
-                <div style="text-align:center;">
-                    <b style="color:darkgoldenrod">${catalogo[tipo].nombre}</b><br>
-                    <input type="text" value="${nota}" onchange="editarNota(${id}, this.value)" style="width:120px; margin:5px 0;"><br>
-                    <small>Coord: ${latlng.lat.toFixed(0)}, ${latlng.lng.toFixed(0)}</small><br>
-                    <button onclick="eliminarMarcador(${id})" style="color:red; margin-top:5px; cursor:pointer;">Eliminar</button>
-                </div>
-            `);
-
-            m.on('dragend', function() {
-                marcadoresEnMapa[id].latlng = m.getLatLng();
-                guardarYRefrescar();
-            });
-        }
-
-        // 4. INTERACCIONES
-        map.on('contextmenu', function(e) {
-            var menuHTML = `<div class="menu-creacion"><b>¿Qué hay aquí?</b><hr>`;
-            for (var key in catalogo) {
-                menuHTML += `<button onclick="insertarPunto('${key}', ${e.latlng.lat}, ${e.latlng.lng})">
-                    <img src="${catalogo[key].icon}" width="15"> ${catalogo[key].nombre}
-                </button>`;
+        map.on('contextmenu', e => {
+            var html = `<b>Añadir objeto:</b><br>`;
+            for(var k in catalogo) {
+                html += `<button onclick="crear('${k}',${e.latlng.lat},${e.latlng.lng})" style="width:100%; margin:2px 0; cursor:pointer;">${catalogo[k].n}</button>`;
             }
-            menuHTML += `</div>`;
-
-            L.popup().setLatLng(e.latlng).setContent(menuHTML).openOn(map);
+            L.popup().setLatLng(e.latlng).setContent(html).openOn(map);
         });
 
-        // Seguimiento de coordenadas para el panel
-        map.on('mousemove', e => {
-            document.getElementById('coordenadas-live').innerHTML = `X: ${e.latlng.lat.toFixed(0)} | Y: ${e.latlng.lng.toFixed(0)}`;
-        });
-
-        // 5. LÓGICA DE DATOS
-        function insertarPunto(tipo, lat, lng) {
+        function crear(t, lat, lng) {
+            var n = prompt("Nombre del sitio:", catalogo[t].n);
+            if(n) {
+                misPuntos.push({l:[lat,lng], t:t, n:n});
+                localStorage.setItem('mapa_wsb_v3', JSON.stringify(misPuntos));
+                renderizar();
+            }
             map.closePopup();
-            var nota = prompt("Nombre o descripción del sitio:", catalogo[tipo].nombre);
-            if (nota !== null) {
-                marcadoresEnMapa.push({ latlng: [lat, lng], tipo: tipo, nota: nota });
-                guardarYRefrescar();
-            }
         }
 
-        function editarNota(id, texto) {
-            marcadoresEnMapa[id].nota = texto;
-            localStorage.setItem('mapa_wsb_persistente', JSON.stringify(marcadoresEnMapa));
-        }
-
-        function eliminarMarcador(id) {
-            marcadoresEnMapa.splice(id, 1);
-            guardarYRefrescar();
-        }
-
-        function guardarYRefrescar() {
-            localStorage.setItem('mapa_wsb_persistente', JSON.stringify(marcadoresEnMapa));
-            renderizarMapa();
+        function eliminar(id) {
+            misPuntos.splice(id, 1);
+            localStorage.setItem('mapa_wsb_v3', JSON.stringify(misPuntos));
+            renderizar();
         }
 
         function borrarTodo() {
-            if(confirm("¿Seguro que quieres hundir todo el mapa?")) {
-                marcadoresEnMapa = [];
-                guardarYRefrescar();
-            }
+            if(confirm("¿Resetear mapa?")) { misPuntos = []; localStorage.removeItem('mapa_wsb_v3'); renderizar(); }
         }
 
-        function exportarDatos() {
-            console.log("DATOS PARA EXCEL/JSON:", JSON.stringify(marcadoresEnMapa));
-            alert("Los datos se han enviado a la Consola (F12). Puedes copiarlos para pasarlos a tus compañeros.");
-        }
+        map.on('mousemove', e => {
+            document.getElementById('coordenadas').innerHTML = `X: ${e.latlng.lat.toFixed(0)} | Y: ${e.latlng.lng.toFixed(0)}`;
+        });
 
-        renderizarMapa();
+        renderizar();
     </script>
 </body>
 </html>
