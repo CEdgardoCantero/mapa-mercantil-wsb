@@ -213,22 +213,47 @@
         }
 
         function crearMarcadorEnMapa(posicion, imgRuta, color, capa) {
-            const html = `
-                <div class="custom-marker-container">
-                    <div class="marker-circle" style="border-color: ${color}"></div>
-                    <img src="${imgRuta}" class="marker-icon-img">
-                </div>`;
-            
-            const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-            const m = L.marker(posicion, { icon: icon }).addTo(capa);
-            
-            // Añadir menú al marcador
-            const menu = L.DomUtil.create('div', 'popup-menu');
-            const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-            btnBorrar.innerHTML = "BORRAR";
-            btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
-            m.bindPopup(menu);
-        }
+    const html = `
+        <div class="custom-marker-container">
+            <div class="marker-circle" style="border-color: ${color}"></div>
+            <img src="${imgRuta}" class="marker-icon-img">
+        </div>`;
+    
+    const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+    const m = L.marker(posicion, { icon: icon }).addTo(capa);
+    
+    vincularMenu(m, capa); // <--- Llamamos a la nueva función
+}
+
+        function vincularMenu(m, capa) {
+    const menu = L.DomUtil.create('div', 'popup-menu');
+    
+    const titulo = L.DomUtil.create('div', '', menu);
+    titulo.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>NOTAS COMERCIALES:</strong>";
+
+    const inputNota = L.DomUtil.create('textarea', 'market-input', menu);
+    inputNota.placeholder = "Ej: Compro Ron 50g...";
+    inputNota.style.cssText = "width:100%; height:50px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace;";
+
+    // Recuperar nota si ya existe
+    if (m.options.notaMercado) inputNota.value = m.options.notaMercado;
+
+    // Guardar al perder el foco
+    inputNota.onblur = () => {
+        m.options.notaMercado = inputNota.value;
+        guardarMemoria();
+    };
+
+    const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
+    btnBorrar.innerHTML = "BORRAR";
+    btnBorrar.style.marginTop = "10px";
+    btnBorrar.onclick = () => { 
+        capa.removeLayer(m); 
+        guardarMemoria(); 
+    };
+
+    m.bindPopup(menu);
+}
 
         function guardarMemoria() {
             const extraer = (capa) => {
