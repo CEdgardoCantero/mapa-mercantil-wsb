@@ -19,7 +19,7 @@
 
         #main-container {
             display: grid;
-            grid-template-columns: 1fr 220px; 
+            grid-template-columns: 1fr 240px; 
             width: 100vw; height: 100vh;
         }
 
@@ -39,17 +39,16 @@
 
         #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
 
-        /* PALETA DERECHA */
+        /* PALETA DERECHA CON SCROLL */
         #palette {
             background-color: #1a1a1a;
             border-left: 2px solid #3d3d3d;
             padding: 15px;
             display: flex; flex-direction: column;
-            overflow-y: auto;
+            overflow-y: auto; /* Permite ver todos los iconos */
             z-index: 2000;
         }
 
-        /* ESTILO DEL SELECTOR DE MODO */
         .mode-container {
             background: #2a1f14;
             padding: 12px;
@@ -59,24 +58,12 @@
             text-align: center;
         }
 
-        #mode-label { 
-            font-size: 11px; 
-            color: #f1c40f; 
-            margin-bottom: 10px; 
-            font-weight: bold;
-            display: block;
-        }
+        #mode-label { font-size: 11px; color: #f1c40f; margin-bottom: 10px; font-weight: bold; display: block; }
 
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #444; transition: .4s; border-radius: 24px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px;
-            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #0088cc; }
         input:checked + .slider:before { transform: translateX(26px); }
 
@@ -84,11 +71,11 @@
         
         #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
         .icon-btn { 
-            width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; 
+            width: 100%; height: 65px; background: #262626; border: 1px solid #3d3d3d; 
             display: flex; justify-content: center; align-items: center; cursor: pointer; 
         }
-        .icon-btn img { width: 40px; height: 40px; }
-        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        .icon-btn img { width: 35px; height: 35px; }
+        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; background: #3d2b1f; }
 
         .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
         .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
@@ -101,7 +88,6 @@
         .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
         .marker-icon-img { width: 26px; height: 26px; z-index: 2; }
 
-        /* POPUPS */
         .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
         .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
         .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
@@ -131,14 +117,30 @@
             <div id="icon-grid">
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/copper.png')"><img src="assets/iconos/copper.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/resin.png')"><img src="assets/iconos/resin.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/rum.png')"><img src="assets/iconos/rum.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/water.png')"><img src="assets/iconos/water.png"></div>
+                
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/pirate-city.png')"><img src="assets/iconos/pirate-city.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/lighthouse.png')"><img src="assets/iconos/lighthouse.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/farm.png')"><img src="assets/iconos/farm.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fishing-village.png')"><img src="assets/iconos/fishing-village.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/altar.png')"><img src="assets/iconos/altar.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/bay.png')"><img src="assets/iconos/bay.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/island.png')"><img src="assets/iconos/island.png"></div>
+
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/printshop.png')"><img src="assets/iconos/printshop.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/points-of-interest.png')"><img src="assets/iconos/points-of-interest.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/text-mark.png')"><img src="assets/iconos/text-mark.png"></div>
             </div>
 
             <div class="color-selector">
-                <div class="color-dot" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
+                <div class="color-dot active" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
                 <div class="color-dot" style="background-color: #33d1ff;" onclick="seleccionarColor(this, '#33d1ff')"></div>
                 <div class="color-dot" style="background-color: #ff33d1;" onclick="seleccionarColor(this, '#ff33d1')"></div>
                 <div class="color-dot" style="background-color: #33ff4d;" onclick="seleccionarColor(this, '#33ff4d')"></div>
@@ -149,57 +151,42 @@
     </div>
 
     <script>
-        // VARIABLES GLOBALES
         var map, capaLocal, capaGremio;
         var iconoActual = null;
         var colorActual = 'white';
         var modoGremio = false;
 
-        // ESPERAR A QUE CARGUE TODO EL HTML
         document.addEventListener('DOMContentLoaded', function() {
-            
-            // 1. Iniciar Mapa
             map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, attributionControl: false });
             var bounds = [[0, 0], [1000, 1300]];
             L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
             map.fitBounds(bounds);
 
-            // 2. Iniciar Capas
             capaLocal = L.layerGroup().addTo(map);
             capaGremio = L.layerGroup();
 
-            // 3. Lógica del Switch de Modo
             document.getElementById('mode-toggle').addEventListener('change', function() {
                 modoGremio = this.checked;
                 const label = document.getElementById('mode-label');
-                
                 if (modoGremio) {
-                    label.innerText = "MODO: GREMIO";
-                    label.style.color = "#33d1ff";
-                    map.addLayer(capaGremio);
-                    map.removeLayer(capaLocal);
+                    label.innerText = "MODO: GREMIO"; label.style.color = "#33d1ff";
+                    map.addLayer(capaGremio); map.removeLayer(capaLocal);
                 } else {
-                    label.innerText = "MODO: LOCAL";
-                    label.style.color = "#f1c40f";
-                    map.addLayer(capaLocal);
-                    map.removeLayer(capaGremio);
+                    label.innerText = "MODO: LOCAL"; label.style.color = "#f1c40f";
+                    map.addLayer(capaLocal); map.removeLayer(capaGremio);
                 }
             });
 
-            // 4. Cargar datos guardados
             cargarMemoria();
 
-            // 5. Clic derecho para poner iconos
             map.on('contextmenu', function(e) {
                 if (!iconoActual) return alert("Selecciona un icono primero");
-
                 const capaActiva = modoGremio ? capaGremio : capaLocal;
                 crearMarcadorEnMapa(e.latlng, iconoActual, colorActual, capaActiva);
                 guardarMemoria();
             });
         });
 
-        // FUNCIONES DE APOYO
         function seleccionarIcono(elemento, ruta) {
             document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
             elemento.classList.add('selected');
@@ -213,16 +200,13 @@
         }
 
         function crearMarcadorEnMapa(posicion, imgRuta, color, capa) {
-            const html = `
-                <div class="custom-marker-container">
+            const html = `<div class="custom-marker-container">
                     <div class="marker-circle" style="border-color: ${color}"></div>
                     <img src="${imgRuta}" class="marker-icon-img">
                 </div>`;
-            
             const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
             const m = L.marker(posicion, { icon: icon }).addTo(capa);
             
-            // Añadir menú al marcador
             const menu = L.DomUtil.create('div', 'popup-menu');
             const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
             btnBorrar.innerHTML = "BORRAR";
@@ -246,7 +230,6 @@
                 datos.forEach(d => {
                     const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
                     const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
-                    
                     const menu = L.DomUtil.create('div', 'popup-menu');
                     const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
                     btnBorrar.innerHTML = "BORRAR";
