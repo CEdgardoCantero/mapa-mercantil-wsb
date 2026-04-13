@@ -1,156 +1,136 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa Mercante Interactivo - World of Sea Battle</title>
-
+    <title>Cartografía Naval - WSB</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #0d0d0d;
-            color: #f1c40f;
-            font-family: 'Courier New', Courier, monospace;
+        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; }
+        #map { height: 100vh; width: 100%; background: #1a1a1a; }
+        
+        /* Panel de Control */
+        .ui-panel {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: rgba(20, 20, 20, 0.9); border: 2px solid #f1c40f;
+            padding: 15px; color: #f1c40f; border-radius: 5px;
         }
 
-        #map {
-            height: 100vh;
-            width: 100%;
-            background: #1a1a1a;
-            cursor: crosshair;
+        .port-card { text-align: center; color: #f1c40f; }
+        .boton-ui {
+            background: #f1c40f; color: black; border: none;
+            padding: 5px 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px;
         }
-
-        /* Estilo de la burbuja (Popup) */
-        .leaflet-popup-content-wrapper {
-            background: rgba(20, 20, 20, 0.95) !important;
-            color: #f1c40f !important;
-            border: 2px solid #f1c40f;
-            box-shadow: 0 0 15px rgba(241, 196, 15, 0.3);
-        }
-
-        .leaflet-popup-tip {
-            background: #f1c40f !important;
-        }
-
-        .port-card {
-            text-align: center;
-            padding: 10px;
-            min-width: 150px;
-        }
-
-        .port-card h3 {
-            margin: 0 0 10px 0;
-            text-transform: uppercase;
-            border-bottom: 1px solid #f1c40f;
-            padding-bottom: 5px;
-        }
-
-        .boton-abrir {
-            background: transparent;
-            color: #f1c40f;
-            border: 1px solid #f1c40f;
-            padding: 8px 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-            width: 100%;
-            font-weight: bold;
-        }
-
-        .boton-abrir:hover {
-            background: #f1c40f;
-            color: black;
-        }
-
-        textarea {
-            background: #111;
-            color: #f1c40f;
-            border: 1px solid #444;
-            width: 100%;
-            margin-top: 5px;
-            padding: 5px;
-        }
+        .boton-borrar { background: #e74c3c; color: white; margin-top: 10px; }
     </style>
 </head>
-
 <body>
+
+    <div class="ui-panel">
+        <h3>MI BITÁCORA</h3>
+        <p><small>Click derecho para añadir punto</small></p>
+        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MAPA</button>
+    </div>
 
     <div id="map"></div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // 1. CONFIGURACIÓN DEL MAPA
-        var map = L.map('map', {
-            crs: L.CRS.Simple,
-            minZoom: -1
-        });
-
-        var ancho = 2000;
-        var alto = 1500;
-        var bounds = [[0, 0], [alto, ancho]];
+        var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
+        var bounds = [[0, 0], [1500, 2000]];
         L.imageOverlay('mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // 2. ICONO DE PUERTO
-        var iconoPuerto = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2942/2942023.png',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
+        // 2. DEFINICIÓN DE ICONOS
+        var iconos = {
+            puerto: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2942/2942023.png', iconSize: [30, 30], iconAnchor: [15, 30] }),
+            tesoro: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4150/4150371.png', iconSize: [30, 30], iconAnchor: [15, 30] }),
+            peligro: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/564/564619.png', iconSize: [30, 30], iconAnchor: [15, 30] })
+        };
+
+        // 3. SISTEMA DE GUARDADO (Local Storage)
+        var marcadoresGuardados = JSON.parse(localStorage.getItem('misPuntosWSB')) || [];
+
+        // Cargar puntos previos al iniciar
+        marcadoresGuardados.forEach(data => {
+            crearMarcador(data.latlng, data.tipo, data.nota, false);
         });
 
-        // 3. CARGA DE DATOS (MÉTODO ROBUSTO)
-        // 3. CARGA DE DATOS (MÉTODO COMPATIBLE CON ARCHIVOS LOCALES)
-    const googleSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQqSCUDEKeGxbn1VQ2lObyN8hoNG-6uRRbqHleytYUih-7RJgu46RAqEKG_tIzIVcKeSecn5iTRRzvb/pub?gid=0&single=true&output=csv'; 
-
-    Papa.parse(googleSheetURL, {
-        download: true, // Esto le dice al navegador que descargue el archivo primero
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-            console.log("¡Datos recibidos!", results.data);
-            
-            results.data.forEach(fila => {
-                // Buscamos las coordenadas (asegúrate que en el Excel se llamen igual)
-                let x = fila.CoordenadaX || fila.x;
-                let y = fila.CoordenadaY || fila.y;
-                let nombre = fila.Puerto || "Puerto";
-
-                if (x && y) {
-                    L.marker([parseFloat(x), parseFloat(y)], {icon: iconoPuerto})
-                     .addTo(map)
-                     .bindPopup(`<h3>${nombre}</h3><p>Precio: ${fila.precio || 'Consultar'}</p>`);
+        function guardarEnMemoria() {
+            var datos = [];
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker && layer.options.tipo) {
+                    datos.push({
+                        latlng: layer.getLatLng(),
+                        tipo: layer.options.tipo,
+                        nota: layer.getPopup().getContent().split('value="')[1]?.split('"')[0] || ""
+                    });
                 }
             });
+            localStorage.setItem('misPuntosWSB', JSON.stringify(datos));
         }
-    });
 
-        // 4. INTERACTIVIDAD (CLIC DERECHO)
-        map.on('contextmenu', function (e) {
-            var playerMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
-            playerMarker.bindPopup(`
-            <div class="port-card">
-                <h4>Nota del Capitán</h4>
-                <textarea placeholder="Escribe aquí..."></textarea><br>
-                <button class="boton-abrir" style="color:#e74c3c; border-color:#e74c3c;" onclick="this.parentElement.parentElement.remove()">BORRAR</button>
-            </div>
-        `).openPopup();
-        });
+        // 4. CREAR MARCADORES
+        function crearMarcador(latlng, tipo, nota = "", guardar = true) {
+            var m = L.marker(latlng, { 
+                icon: iconos[tipo], 
+                draggable: true,
+                tipo: tipo 
+            }).addTo(map);
 
-        // 5. COORDENADAS (CLIC IZQUIERDO)
-        var coordPopup = L.popup();
-        map.on('click', function (e) {
-            coordPopup
+            var popupContent = `
+                <div class="port-card">
+                    <strong style="text-transform: uppercase;">${tipo}</strong><br>
+                    <input type="text" id="nota-${m._leaflet_id}" value="${nota}" placeholder="Nombre/Nota..." 
+                           style="background:#000; color:#f1c40f; border:1px solid #f1c40f; margin-top:5px; padding:3px;">
+                    <button class="boton-ui" onclick="borrarMarcador(${m._leaflet_id})">ELIMINAR</button>
+                </div>
+            `;
+
+            m.bindPopup(popupContent);
+            
+            // Eventos para guardar cambios
+            m.on('dragend', guardarEnMemoria);
+            m.on('popupclose', guardarEnMemoria);
+            
+            if(guardar) guardarEnMemoria();
+            return m;
+        }
+
+        // 5. MENÚ CLIC DERECHO (Interacción)
+        map.on('contextmenu', function(e) {
+            var tempPopup = L.popup()
                 .setLatLng(e.latlng)
-                .setContent("X: " + e.latlng.lat.toFixed(0) + " | Y: " + e.latlng.lng.toFixed(0))
+                .setContent(`
+                    <div class="port-card">
+                        <b>AÑADIR A BITÁCORA</b><br>
+                        <button class="boton-ui" onclick="colocar('puerto', ${e.latlng.lat}, ${e.latlng.lng})">⚓ PUERTO</button>
+                        <button class="boton-ui" onclick="colocar('tesoro', ${e.latlng.lat}, ${e.latlng.lng})">💰 TESORO/NAUFRAGIO</button>
+                        <button class="boton-ui" onclick="colocar('peligro', ${e.latlng.lat}, ${e.latlng.lng})">💀 PELIGRO</button>
+                    </div>
+                `)
                 .openOn(map);
         });
+
+        function colocar(tipo, lat, lng) {
+            map.closePopup();
+            crearMarcador([lat, lng], tipo);
+        }
+
+        function borrarMarcador(id) {
+            map.eachLayer(function(layer) {
+                if (layer._leaflet_id === id) map.removeLayer(layer);
+            });
+            guardarEnMemoria();
+        }
+
+        function borrarTodo() {
+            if(confirm("¿Seguro que quieres borrar todo tu mapa personal?")) {
+                localStorage.removeItem('misPuntosWSB');
+                location.reload();
+            }
+        }
     </script>
 </body>
-
 </html>
