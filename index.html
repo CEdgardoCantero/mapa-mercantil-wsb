@@ -1,248 +1,274 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesa de Comandante - Gremio WSB</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Estratégico - Gremio WSB</title>
 
-    <style>
-        body, html { 
-            margin: 0; padding: 0; height: 100%; width: 100%; 
-            background-color: #0d0d0d;
-            font-family: 'Courier New', monospace;
-            display: flex; overflow: hidden;
-            background-image: radial-gradient(circle at center, #001f3f 0%, #0d0d0d 100%);
-        }
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-        #main-container {
-            display: grid;
-            grid-template-columns: 1fr 240px; 
-            width: 100vw; height: 100vh;
-        }
+<style>
+body { margin:0; background:#0d0d0d; font-family:Courier New; color:#f1c40f; }
+#map { height:100vh; }
 
-        #map-area { display: flex; justify-content: center; align-items: center; perspective: 1500px; }
+.ui-panel{
+position:absolute; right:10px; top:10px; z-index:1000;
+background:#111; border:2px solid #f1c40f;
+padding:15px; width:260px; border-radius:8px;
+}
 
-        #war-table {
-            width: 70vw; height: 75vh;
-            background-color: #2c1e16;
-            border: 12px solid #3d2b1f;
-            border-radius: 4px;
-            box-shadow: 0 40px 70px rgba(0,0,0,0.9);
-            transform: rotateX(25deg) rotateZ(-0.5deg);
-            transform-style: preserve-3d;
-            position: relative;
-            overflow: hidden;
-        }
+.section-title{
+border-bottom:1px solid #f1c40f;
+margin-bottom:8px; font-size:13px; font-weight:bold;
+}
 
-        #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
+.boton-ui{
+background:transparent; color:#f1c40f;
+border:1px solid #f1c40f;
+padding:5px; width:100%;
+margin-bottom:6px; cursor:pointer;
+}
 
-        #palette {
-            background-color: #1a1a1a;
-            border-left: 2px solid #3d3d3d;
-            padding: 15px;
-            display: flex; flex-direction: column;
-            overflow-y: auto; /* Scroll para ver los 21 iconos */
-            z-index: 2000;
-        }
+.boton-ui:hover{ background:#f1c40f; color:black; }
 
-        .mode-container {
-            background: #2a1f14;
-            padding: 12px;
-            border: 1px solid #b8860b;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+select,input,textarea{
+width:100%; margin-bottom:5px;
+background:#000; color:#f1c40f;
+border:1px solid #444; padding:3px;
+font-size:11px;
+}
 
-        #mode-label { font-size: 11px; color: #f1c40f; font-weight: bold; display: block; margin-bottom: 10px; }
+textarea{ resize:none; }
 
-        .palette-title { color: #f1c40f; text-align: center; font-size: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; letter-spacing: 1px; }
-        
-        #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .icon-btn { 
-            width: 100%; height: 65px; background: #262626; border: 1px solid #3d3d3d; 
-            display: flex; justify-content: center; align-items: center; cursor: pointer; 
-        }
-        .icon-btn img { width: 32px; height: 32px; }
-        .icon-btn.selected { border-color: #f1c40f; background: #3d2b1f; box-shadow: 0 0 8px #f1c40f; }
-
-        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
-        .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
-        .color-dot.active { border: 2px solid #f1c40f; transform: scale(1.1); }
-
-        .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 10px; margin-top: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
-
-        /* Estilo Marcadores */
-        .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
-        .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
-        .marker-icon-img { width: 24px; height: 24px; z-index: 2; }
-
-        /* Popups */
-        .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
-        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; min-width: 150px; }
-        .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
-    </style>
+</style>
 </head>
 <body>
 
-    <div id="main-container">
-        <div id="map-area">
-            <div id="war-table">
-                <div id="map"></div>
-            </div>
-        </div>
+<div class="ui-panel">
 
-        <div id="palette">
-            <div class="mode-container">
-                <span id="mode-label">MODO: LOCAL</span>
-                <input type="checkbox" id="mode-toggle" style="cursor:pointer;">
-            </div>
+<div class="section-title">⚓ MODO</div>
+<button class="boton-ui" onclick="togglePersonal()">Mostrar/Ocultar Personal</button>
+<button class="boton-ui" onclick="activarModoRuta()">Modo Ruta</button>
+<button class="boton-ui" onclick="exportarDatos()">Exportar Local</button>
+<button class="boton-ui" onclick="resetPersonal()" style="color:#e74c3c;border-color:#e74c3c;">Reset Personal</button>
 
-            <div class="palette-title">MAESTRO CARTÓGRAFO</div>
-            
-            <div id="icon-grid">
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/altar.png')"><img src="assets/iconos/altar.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/bay.png')"><img src="assets/iconos/bay.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/copper.png')"><img src="assets/iconos/copper.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/farm.png')"><img src="assets/iconos/farm.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fishing-village.png')"><img src="assets/iconos/fishing-village.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/island.png')"><img src="assets/iconos/island.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/lighthouse.png')"><img src="assets/iconos/lighthouse.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/pirate-city.png')"><img src="assets/iconos/pirate-city.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/points-of-interest.png')"><img src="assets/iconos/points-of-interest.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/printshop.png')"><img src="assets/iconos/printshop.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/resin.png')"><img src="assets/iconos/resin.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/rum.png')"><img src="assets/iconos/rum.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/text-mark.png')"><img src="assets/iconos/text-mark.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/water.png')"><img src="assets/iconos/water.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/skull.png')"><img src="assets/iconos/skull.png"></div>
-            </div>
+<div class="section-title" style="margin-top:10px;">🗺 CREAR MARCA</div>
 
-            <div class="color-selector">
-                <div class="color-dot active" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
-                <div class="color-dot" style="background-color: #33d1ff;" onclick="seleccionarColor(this, '#33d1ff')"></div>
-                <div class="color-dot" style="background-color: #ff33d1;" onclick="seleccionarColor(this, '#ff33d1')"></div>
-                <div class="color-dot" style="background-color: #33ff4d;" onclick="seleccionarColor(this, '#33ff4d')"></div>
-            </div>
+<select id="tipoIcono">
+<option value="port">Puerto</option>
+<option value="city">Ciudad</option>
+<option value="fort">Fuerte</option>
+<option value="bay">Bahía</option>
+<option value="farm">Granja</option>
+<option value="iron">Hierro</option>
+<option value="wood">Madera</option>
+<option value="rum">Ron</option>
+<option value="water">Agua</option>
+</select>
 
-            <button class="action-btn" onclick="limpiarCapaActual()">LIMPIAR CAPA</button>
-        </div>
-    </div>
+<input type="text" id="nombre" placeholder="Nombre">
+<input type="number" id="compra" placeholder="Precio Compra">
+<input type="number" id="venta" placeholder="Precio Venta">
 
-    <script>
-        var map, capaLocal, capaGremio;
-        var iconoActual = null;
-        var colorActual = 'white';
-        var modoGremio = false;
+<select id="riesgo">
+<option>Bajo</option>
+<option>Medio</option>
+<option>Alto</option>
+</select>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, attributionControl: false });
-            var bounds = [[0, 0], [1000, 1300]];
-            L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
-            map.fitBounds(bounds);
+<textarea id="nota" rows="3" placeholder="Notas..."></textarea>
 
-            capaLocal = L.layerGroup().addTo(map);
-            capaGremio = L.layerGroup();
+<p style="font-size:10px;">Click derecho en el mapa para colocar</p>
 
-            document.getElementById('mode-toggle').addEventListener('change', function() {
-                modoGremio = this.checked;
-                const label = document.getElementById('mode-label');
-                if (modoGremio) {
-                    label.innerText = "MODO: GREMIO"; label.style.color = "#33d1ff";
-                    map.addLayer(capaGremio); map.removeLayer(capaLocal);
-                } else {
-                    label.innerText = "MODO: LOCAL"; label.style.color = "#f1c40f";
-                    map.addLayer(capaLocal); map.removeLayer(capaGremio);
-                }
-            });
+</div>
 
-            cargarMemoria();
+<div id="map"></div>
 
-            map.on('contextmenu', function(e) {
-                if (!iconoActual) return alert("Selecciona un icono primero");
-                const capaActiva = modoGremio ? capaGremio : capaLocal;
-                crearMarcadorEnMapa(e.latlng, iconoActual, colorActual, capaActiva);
-                guardarMemoria();
-            });
-        });
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        function seleccionarIcono(elemento, ruta) {
-            document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
-            elemento.classList.add('selected');
-            iconoActual = ruta;
-        }
+<script>
 
-        function seleccionarColor(elemento, color) {
-            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-            elemento.classList.add('active');
-            colorActual = color;
-        }
+// ======================
+// CONFIG MAPA
+// ======================
 
-        function crearMarcadorEnMapa(posicion, imgRuta, color, capa) {
-            const html = `<div class="custom-marker-container">
-                    <div class="marker-circle" style="border-color: ${color}"></div>
-                    <img src="${imgRuta}" class="marker-icon-img">
-                </div>`;
-            const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-            const m = L.marker(posicion, { icon: icon }).addTo(capa);
-            vincularMenu(m, capa);
-        }
+var map = L.map('map',{crs:L.CRS.Simple,minZoom:-1,attributionControl:false});
+var bounds=[[0,0],[1500,2000]];
+L.imageOverlay('mapa_juego.jpg',bounds).addTo(map);
+map.fitBounds(bounds);
 
-        function vincularMenu(m, capa) {
-            const menu = L.DomUtil.create('div', 'popup-menu');
-            menu.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>NOTAS:</strong>";
-            const inputNota = L.DomUtil.create('textarea', '', menu);
-            inputNota.style.cssText = "width:100%; height:40px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace;";
-            
-            if (m.options.nota) inputNota.value = m.options.nota;
-            inputNota.onblur = () => { m.options.nota = inputNota.value; guardarMemoria(); };
+var capaPersonal=L.layerGroup().addTo(map);
+var capaRutas=L.layerGroup().addTo(map);
 
-            const btnBorrar = L.DomUtil.create('button', 'popup-btn', menu);
-            btnBorrar.innerHTML = "ELIMINAR";
-            btnBorrar.style.color = "#ff4d4d";
-            btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
-            m.bindPopup(menu);
-        }
+// ======================
+// ICONOS DISPONIBLES
+// ======================
 
-        function guardarMemoria() {
-            const extraer = (capa) => {
-                let res = [];
-                capa.eachLayer(l => res.push({ latlng: l.getLatLng(), html: l.options.icon.options.html, nota: l.options.nota || "" }));
-                return res;
-            };
-            localStorage.setItem('wsb_final_local', JSON.stringify(extraer(capaLocal)));
-            localStorage.setItem('wsb_final_gremio', JSON.stringify(extraer(capaGremio)));
-        }
+var iconos={
+port:'assets/iconos/port.png',
+city:'assets/iconos/city.png',
+fort:'assets/iconos/fort.png',
+bay:'assets/iconos/bay.png',
+farm:'assets/iconos/farm.png',
+iron:'assets/iconos/iron.png',
+wood:'assets/iconos/wood.png',
+rum:'assets/iconos/rum.png',
+water:'assets/iconos/water.png'
+};
 
-        function cargarMemoria() {
-            const reconstruir = (key, capa) => {
-                const datos = JSON.parse(localStorage.getItem(key) || "[]");
-                datos.forEach(d => {
-                    const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-                    const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
-                    m.options.nota = d.nota;
-                    vincularMenu(m, capa);
-                });
-            };
-            reconstruir('wsb_final_local', capaLocal);
-            reconstruir('wsb_final_gremio', capaGremio);
-        }
+// ======================
+// STORAGE
+// ======================
 
-        function limpiarCapaActual() {
-            if(confirm("¿Borrar capa actual?")) {
-                modoGremio ? capaGremio.clearLayers() : capaLocal.clearLayers();
-                guardarMemoria();
-            }
-        }
-    </script>
+var datosPersonal=JSON.parse(localStorage.getItem('wsb_personal_v2'))||[];
+var rutasPersonal=JSON.parse(localStorage.getItem('wsb_rutas_v2'))||[];
+
+function guardar(){
+localStorage.setItem('wsb_personal_v2',JSON.stringify(datosPersonal));
+localStorage.setItem('wsb_rutas_v2',JSON.stringify(rutasPersonal));
+}
+
+// ======================
+// DIBUJAR MARCAS
+// ======================
+
+function dibujarMarca(data,index){
+
+var icono=L.icon({
+iconUrl:iconos[data.tipo],
+iconSize:[30,30],
+iconAnchor:[15,30]
+});
+
+var marker=L.marker(data.latlng,{icon:icono,draggable:true}).addTo(capaPersonal);
+
+marker.bindPopup(`
+<b>${data.nombre}</b><br>
+Compra: ${data.compra||"-"}<br>
+Venta: ${data.venta||"-"}<br>
+Riesgo: ${data.riesgo}<br>
+${data.nota||""}
+<br><br>
+<button onclick="borrarMarca(${index})">BORRAR</button>
+`);
+
+marker.on("dragend",function(){
+datosPersonal[index].latlng=marker.getLatLng();
+guardar();
+});
+}
+
+function borrarMarca(i){
+datosPersonal.splice(i,1);
+guardar();
+location.reload();
+}
+
+// ======================
+// CREAR MARCA
+// ======================
+
+map.on("contextmenu",function(e){
+
+var data={
+tipo:document.getElementById("tipoIcono").value,
+nombre:document.getElementById("nombre").value||"Sin Nombre",
+compra:document.getElementById("compra").value,
+venta:document.getElementById("venta").value,
+riesgo:document.getElementById("riesgo").value,
+nota:document.getElementById("nota").value,
+latlng:e.latlng
+};
+
+datosPersonal.push(data);
+guardar();
+dibujarMarca(data,datosPersonal.length-1);
+});
+
+// ======================
+// SISTEMA DE RUTAS
+// ======================
+
+var modoRuta=false;
+var rutaActual=[];
+var polyActual=null;
+
+function activarModoRuta(){
+modoRuta=!modoRuta;
+alert(modoRuta?"Modo Ruta ACTIVADO":"Modo Ruta DESACTIVADO");
+}
+
+map.on("click",function(e){
+
+if(!modoRuta) return;
+
+rutaActual.push(e.latlng);
+
+if(polyActual) capaRutas.removeLayer(polyActual);
+
+polyActual=L.polyline(rutaActual,{color:'cyan'}).addTo(capaRutas);
+
+});
+
+map.on("dblclick",function(){
+
+if(rutaActual.length>1){
+rutasPersonal.push(rutaActual);
+guardar();
+alert("Ruta guardada");
+}
+
+rutaActual=[];
+polyActual=null;
+modoRuta=false;
+
+});
+
+// Dibujar rutas guardadas
+rutasPersonal.forEach(r=>{
+L.polyline(r,{color:'cyan'}).addTo(capaRutas);
+});
+
+// ======================
+// EXPORTAR
+// ======================
+
+function exportarDatos(){
+
+var data={
+marcas:datosPersonal,
+rutas:rutasPersonal
+};
+
+var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+var a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="mapa_personal_wsb.json";
+a.click();
+}
+
+// ======================
+// UTILIDADES
+// ======================
+
+function togglePersonal(){
+if(map.hasLayer(capaPersonal)) map.removeLayer(capaPersonal);
+else map.addLayer(capaPersonal);
+}
+
+function resetPersonal(){
+if(confirm("Seguro?")){
+localStorage.clear();
+location.reload();
+}
+}
+
+// ======================
+// CARGA INICIAL
+// ======================
+
+datosPersonal.forEach((d,i)=>dibujarMarca(d,i));
+
+</script>
 </body>
 </html>
