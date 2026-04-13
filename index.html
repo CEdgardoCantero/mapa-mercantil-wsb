@@ -319,45 +319,78 @@ function suavizarRuta(puntos){
 // ANIMACION BARCO
 // ======================
 
+// ======================
+// ANIMACION NAVAL PRO
+// ======================
+
+var barcoAnimado = null;
+var intervaloBarco = null;
+
 function animarRuta(ruta){
 
-    let rutaSuave=suavizarRuta(ruta);
+    // Si ya hay animación, detenerla
+    if(intervaloBarco){
+        clearInterval(intervaloBarco);
+    }
 
-    let barcoIcon=L.icon({
+    if(barcoAnimado){
+        map.removeLayer(barcoAnimado);
+    }
+
+    let rutaSuave = suavizarRuta(ruta);
+
+    let barcoIcon = L.icon({
         iconUrl:'assets/iconos/ship.png',
         iconSize:[40,40],
         iconAnchor:[20,20],
         className:'barco-rotable'
     });
 
-    let marker=L.marker(rutaSuave[0],{icon:barcoIcon}).addTo(map);
+    barcoAnimado = L.marker(rutaSuave[0],{
+        icon:barcoIcon
+    }).addTo(map);
 
-    let i=0;
+    let i = 0;
+    let direccion = 1;
+    let tiempo = 0;
 
-    let intervalo=setInterval(()=>{
+    intervaloBarco = setInterval(()=>{
 
-        if(i>=rutaSuave.length-1){
-            clearInterval(intervalo);
+        if(rutaSuave.length < 2) return;
+
+        let actual = rutaSuave[i];
+        let siguiente = rutaSuave[i + direccion];
+
+        if(!siguiente){
+            direccion *= -1; // invertir dirección
             return;
         }
 
-        let actual=rutaSuave[i];
-        let siguiente=rutaSuave[i+1];
+        barcoAnimado.setLatLng(actual);
 
-        marker.setLatLng(actual);
+        // Rotación según dirección
+        let dx = siguiente.lng - actual.lng;
+        let dy = siguiente.lat - actual.lat;
+        let angulo = Math.atan2(dy, dx) * 180 / Math.PI;
 
-        let dx=siguiente.lng-actual.lng;
-        let dy=siguiente.lat-actual.lat;
-        let angulo=Math.atan2(dy,dx)*180/Math.PI;
+        // Balanceo cartoon
+        tiempo += 0.1;
+        let balanceo = Math.sin(tiempo) * 8; // 8 grados de balanceo
 
-        let iconElement=marker.getElement();
+        let iconElement = barcoAnimado.getElement();
         if(iconElement){
-            iconElement.style.transform=`rotate(${angulo}deg)`;
+            iconElement.style.transform =
+                `rotate(${angulo + balanceo}deg)`;
         }
 
-        i++;
+        i += direccion;
 
-    },30);
+        // Cuando llega al final, invertir
+        if(i >= rutaSuave.length - 1 || i <= 0){
+            direccion *= -1;
+        }
+
+    }, 60); // velocidad (más alto = más lento)
 }
 
 function animarUltimaRuta(){
