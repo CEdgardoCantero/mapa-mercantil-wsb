@@ -19,19 +19,19 @@
 
         #main-container {
             display: grid;
-            grid-template-columns: 1fr 220px; 
+            grid-template-columns: 1fr 240px; 
             width: 100vw; height: 100vh;
         }
 
         #map-area { display: flex; justify-content: center; align-items: center; perspective: 1500px; }
 
         #war-table {
-            width: 70vw; height: 75vh;
+            width: 75vw; height: 80vh;
             background-color: #2c1e16;
             border: 12px solid #3d2b1f;
             border-radius: 4px;
             box-shadow: 0 40px 70px rgba(0,0,0,0.9);
-            transform: rotateX(25deg) rotateZ(-0.5deg);
+            transform: rotateX(20deg);
             transform-style: preserve-3d;
             position: relative;
             overflow: hidden;
@@ -39,10 +39,11 @@
 
         #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
 
+        /* PALETA DERECHA EXPANDIDA */
         #palette {
             background-color: #1a1a1a;
             border-left: 2px solid #3d3d3d;
-            padding: 15px;
+            padding: 10px;
             display: flex; flex-direction: column;
             overflow-y: auto;
             z-index: 2000;
@@ -50,46 +51,59 @@
 
         .mode-container {
             background: #2a1f14;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #b8860b;
             border-radius: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             text-align: center;
         }
 
-        #mode-label { font-size: 11px; color: #f1c40f; margin-bottom: 10px; font-weight: bold; display: block; }
+        #mode-label { font-size: 10px; color: #f1c40f; margin-bottom: 8px; font-weight: bold; display: block; }
 
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #0088cc; }
-        input:checked + .slider:before { transform: translateX(26px); }
+        input:checked + .slider:before { transform: translateX(24px); }
 
-        .palette-title { color: #f1c40f; text-align: center; font-size: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; letter-spacing: 1px; }
+        .palette-title { color: #f1c40f; text-align: center; font-size: 10px; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .icon-btn { width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
-        .icon-btn:hover { background: #333; }
-        .icon-btn img { width: 40px; height: 40px; }
-        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; background: #3d2b1f; }
+        /* GRID DE ICONOS MEJORADO */
+        #icon-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 6px; 
+            padding-bottom: 20px;
+        }
+        .icon-btn { 
+            width: 100%; 
+            height: 55px; 
+            background: #262626; 
+            border: 1px solid #3d3d3d; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            cursor: pointer; 
+            transition: 0.2s;
+        }
+        .icon-btn img { width: 32px; height: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+        .icon-btn.selected { border-color: #f1c40f; background: #3d2b1f; box-shadow: inset 0 0 10px rgba(241, 196, 15, 0.3); }
 
-        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
+        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
         .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
         .color-dot.active { border: 2px solid #f1c40f; transform: scale(1.1); }
 
-        .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 10px; margin-top: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
-        .action-btn:hover { background: #3d2b1f; }
+        .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 8px; margin-top: 15px; cursor: pointer; font-size: 9px; font-weight: bold; }
 
-        .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
-        .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
-        .marker-icon-img { width: 26px; height: 26px; z-index: 2; }
+        /* ESTILOS DE MARCADOR */
+        .custom-marker-container { display: flex; justify-content: center; align-items: center; }
+        .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.3); box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .marker-icon-img { width: 24px; height: 24px; z-index: 2; }
 
         /* POPUPS */
         .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
-        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; min-width: 150px; }
-        .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
-        .btn-delete { color: #ff4d4d; border-color: #802020; }
+        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; min-width: 160px; }
     </style>
 </head>
 <body>
@@ -103,34 +117,51 @@
 
         <div id="palette">
             <div class="mode-container">
-                <span id="mode-label">MODO: LOCAL</span>
+                <span id="mode-label">SISTEMA: LOCAL</span>
                 <label class="switch">
                     <input type="checkbox" id="mode-toggle">
                     <span class="slider"></span>
                 </label>
             </div>
 
-            <div class="palette-title">MAESTRO CARTÓGRAFO</div>
+            <div class="palette-title">ICONOGRAFÍA DE GUERRA</div>
             
             <div id="icon-grid">
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/tower.png')"><img src="assets/iconos/tower.png"></div>
-                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/ship.png')"><img src="assets/iconos/ship.png"></div>
-                </div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coal.png')"><img src="assets/iconos/coal.png" title="Carbón"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/iron.png')"><img src="assets/iconos/iron.png" title="Hierro"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/wood.png')"><img src="assets/iconos/wood.png" title="Madera"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/stone.png')"><img src="assets/iconos/stone.png" title="Piedra"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/food.png')"><img src="assets/iconos/food.png" title="Comida"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/skin.png')"><img src="assets/iconos/skin.png" title="Cuero"></div>
+                
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png" title="Ciudad"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png" title="Fuerte"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/tower.png')"><img src="assets/iconos/tower.png" title="Torre"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png" title="Puerto"></div>
+                
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/ship.png')"><img src="assets/iconos/ship.png" title="Barco"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/anchor.png')"><img src="assets/iconos/anchor.png" title="Ancla"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/coin.png')"><img src="assets/iconos/coin.png" title="Oro"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/market.png')"><img src="assets/iconos/market.png" title="Mercado"></div>
+                
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/skull.png')"><img src="assets/iconos/skull.png" title="Peligro"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/swords.png')"><img src="assets/iconos/swords.png" title="Batalla"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/alert.png')"><img src="assets/iconos/alert.png" title="Alerta"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/quest.png')"><img src="assets/iconos/quest.png" title="Misión"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/eye.png')"><img src="assets/iconos/eye.png" title="Exploración"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/shield.png')"><img src="assets/iconos/shield.png" title="Defensa"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fire.png')"><img src="assets/iconos/fire.png" title="Quema"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/boss.png')"><img src="assets/iconos/boss.png" title="Jefe"></div>
+            </div>
 
             <div class="color-selector">
-                <div class="color-dot active" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
+                <div class="color-dot" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
                 <div class="color-dot" style="background-color: #33d1ff;" onclick="seleccionarColor(this, '#33d1ff')"></div>
                 <div class="color-dot" style="background-color: #ff33d1;" onclick="seleccionarColor(this, '#ff33d1')"></div>
                 <div class="color-dot" style="background-color: #33ff4d;" onclick="seleccionarColor(this, '#33ff4d')"></div>
             </div>
 
-            <button class="action-btn" onclick="limpiarCapaActual()">LIMPIAR CAPA</button>
+            <button class="action-btn" onclick="limpiarCapaActual()">BORRAR CAPA ACTUAL</button>
         </div>
     </div>
 
@@ -145,10 +176,8 @@
                 crs: L.CRS.Simple, 
                 minZoom: -1, 
                 maxZoom: 2, 
-                attributionControl: false,
-                zoomControl: true 
+                attributionControl: false 
             });
-            
             var bounds = [[0, 0], [1000, 1300]];
             L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
             map.fitBounds(bounds);
@@ -160,10 +189,10 @@
                 modoGremio = this.checked;
                 const label = document.getElementById('mode-label');
                 if (modoGremio) {
-                    label.innerText = "MODO: GREMIO"; label.style.color = "#33d1ff";
+                    label.innerText = "SISTEMA: GREMIO"; label.style.color = "#33d1ff";
                     map.addLayer(capaGremio); map.removeLayer(capaLocal);
                 } else {
-                    label.innerText = "MODO: LOCAL"; label.style.color = "#f1c40f";
+                    label.innerText = "SISTEMA: LOCAL"; label.style.color = "#f1c40f";
                     map.addLayer(capaLocal); map.removeLayer(capaGremio);
                 }
             });
@@ -197,16 +226,15 @@
             </div>`;
             const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
             const m = L.marker(posicion, { icon: icon }).addTo(capa);
-            
             vincularMenu(m, capa);
         }
 
         function vincularMenu(m, capa) {
             const menu = L.DomUtil.create('div', 'popup-menu');
-            menu.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>NOTAS COMERCIALES:</strong>";
+            menu.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>BITÁCORA:</strong>";
 
             const inputNota = L.DomUtil.create('textarea', '', menu);
-            inputNota.placeholder = "Ej: Ron 50g...";
+            inputNota.placeholder = "Escribe aquí...";
             inputNota.style.cssText = "width:100%; height:60px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace; resize:none; padding:5px;";
 
             if (m.options.notaMercado) inputNota.value = m.options.notaMercado;
@@ -216,11 +244,12 @@
                 guardarMemoria();
             };
 
-            const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-            btnBorrar.innerHTML = "ELIMINAR MARCADOR";
-            btnBorrar.style.marginTop = "10px";
+            const btnBorrar = L.DomUtil.create('button', 'action-btn');
+            btnBorrar.innerHTML = "ELIMINAR";
+            btnBorrar.style.color = "#ff4d4d";
             btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
 
+            menu.appendChild(btnBorrar);
             m.bindPopup(menu);
         }
 
@@ -236,8 +265,8 @@
                 });
                 return res;
             };
-            localStorage.setItem('wsb_final_local', JSON.stringify(extraer(capaLocal)));
-            localStorage.setItem('wsb_final_gremio', JSON.stringify(extraer(capaGremio)));
+            localStorage.setItem('wsb_v_omega_local', JSON.stringify(extraer(capaLocal)));
+            localStorage.setItem('wsb_v_omega_gremio', JSON.stringify(extraer(capaGremio)));
         }
 
         function cargarMemoria() {
@@ -250,12 +279,12 @@
                     vincularMenu(m, capa);
                 });
             };
-            reconstruir('wsb_final_local', capaLocal);
-            reconstruir('wsb_final_gremio', capaGremio);
+            reconstruir('wsb_v_omega_local', capaLocal);
+            reconstruir('wsb_v_omega_gremio', capaGremio);
         }
 
         function limpiarCapaActual() {
-            if(confirm("¿Deseas borrar todos los marcadores de esta capa?")) {
+            if(confirm("¿Borrar todos los marcadores de esta capa?")) {
                 modoGremio ? capaGremio.clearLayers() : capaLocal.clearLayers();
                 guardarMemoria();
             }
