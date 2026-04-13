@@ -81,9 +81,12 @@ select,input,textarea{
 <div class="section-title">⚓ MODO</div>
 <button class="boton-ui" onclick="togglePersonal()">Mostrar/Ocultar Personal</button>
 <button class="boton-ui" onclick="activarModoRuta()">Modo Ruta</button>
-<button class="boton-ui" onclick="guardarRutaActual()">Guardar Ruta</button>
+<button class="boton-ui" onclick="activarModoZona()">Modo Zona Peligrosa</button>
+<button class="boton-ui" onclick="guardarZonaActual()">Guardar Zona</button>
 <button class="boton-ui" onclick="animarUltimaRuta()">Animar Última Ruta</button>
-<button class="boton-ui" onclick="detenerAnimacion()">Detener Barco</button>
+<button class="boton-ui" onclick="detenerAnimacion()">Detener Animación</button>
+<button class="boton-ui" onclick="calcularGanancia()">Calcular Ganancia</button>
+<button class="boton-ui" onclick="planificarRutaOptima()">Planificar Ruta Óptima</button>
 <button class="boton-ui" onclick="exportarDatos()">Exportar Local</button>
 <button class="boton-ui" onclick="resetPersonal()" style="color:#e74c3c;border-color:#e74c3c;">Reset Personal</button>
 
@@ -99,6 +102,9 @@ select,input,textarea{
 <option value="wood">Madera</option>
 <option value="rum">Ron</option>
 <option value="water">Agua</option>
+<option value="pirate">Zona Pirata</option>
+<option value="danger">Zona Peligrosa</option>
+<option value="storm">Tormenta</option>
 </select>
 
 <input type="text" id="nombre" placeholder="Nombre">
@@ -141,6 +147,7 @@ map.fitBounds(bounds);
 
 var capaPersonal=L.layerGroup().addTo(map);
 var capaRutas=L.layerGroup().addTo(map);
+var capaZonas=L.layerGroup().addTo(map);
 
 // ======================
 // ICONOS
@@ -155,7 +162,10 @@ var iconos={
     iron:'assets/iconos/iron.png',
     wood:'assets/iconos/wood.png',
     rum:'assets/iconos/rum.png',
-    water:'assets/iconos/water.png'
+    water:'assets/iconos/water.png',
+    pirate:'assets/iconos/pirate.png',
+    danger:'assets/iconos/danger.png',
+    storm:'assets/iconos/storm.png'
 };
 
 // ======================
@@ -164,10 +174,12 @@ var iconos={
 
 var datosPersonal=JSON.parse(localStorage.getItem('wsb_personal_v2'))||[];
 var rutasPersonal=JSON.parse(localStorage.getItem('wsb_rutas_v2'))||[];
+var zonasPersonal=JSON.parse(localStorage.getItem('wsb_zonas_v2'))||[];
 
 function guardar(){
     localStorage.setItem('wsb_personal_v2',JSON.stringify(datosPersonal));
     localStorage.setItem('wsb_rutas_v2',JSON.stringify(rutasPersonal));
+    localStorage.setItem('wsb_zonas_v2',JSON.stringify(zonasPersonal));
 }
 
 // ======================
@@ -234,78 +246,81 @@ map.on("contextmenu",function(e){
 var modoRuta = false;
 var rutaActual = [];
 var polyActual = null;
+var modoZona = false;
+var zonaActual = [];
+var polyZonaActual = null;
 
-function activarModoRuta(){
-    modoRuta = true;
-    rutaActual = [];
+function activarModoZona(){
+    modoZona = true;
+    zonaActual = [];
     
-    if(polyActual){
-        capaRutas.removeLayer(polyActual);
-        polyActual = null;
+    if(polyZonaActual){
+        capaZonas.removeLayer(polyZonaActual);
+        polyZonaActual = null;
     }
 
-    alert("Modo Ruta ACTIVADO - Haz click para marcar puntos");
+    alert("Modo Zona Peligrosa ACTIVADO - Haz click para marcar puntos del área");
 }
 
 map.on("click", function(e){
 
-    if(!modoRuta) return;
+    if(modoRuta){
+        rutaActual.push(e.latlng);
 
-    rutaActual.push(e.latlng);
+        if(polyActual){
+            capaRutas.removeLayer(polyActual);
+        }
 
-    if(polyActual){
-        capaRutas.removeLayer(polyActual);
+        polyActual = L.polyline(rutaActual, {
+            color: 'cyan',
+            weight: 3
+        }).addTo(capaRutas);
+    } else if(modoZona){
+        zonaActual.push(e.latlng);
+
+        if(polyZonaActual){
+            capaZonas.removeLayer(polyZonaActual);
+        }
+
+        polyZonaActual = L.polygon(zonaActual, {
+            color: 'red',
+            weight: 2,
+            fillColor: 'red',
+            fillOpacity: 0.3
+        }).addTo(capaZonas);
     }
-
-    polyActual = L.polyline(rutaActual, {
-        color: 'cyan',
-        weight: 3
-    }).addTo(capaRutas);
 });
 
-function guardarRutaActual(){
+function guardarZonaActual(){
 
-    if(!modoRuta){
-        alert("Activa primero el Modo Ruta");
+    if(!modoZona){
+        alert("Activa primero el Modo Zona Peligrosa");
         return;
     }
 
-    if(rutaActual.length < 2){
-        alert("Necesitas al menos 2 puntos");
+    if(zonaActual.length < 3){
+        alert("Necesitas al menos 3 puntos para un área");
         return;
     }
 
-    // Copia profunda real
-    let copiaRuta = rutaActual.map(p => ({lat: p.lat, lng: p.lng}));
-
-    rutasPersonal.push(copiaRuta);
-
+    let copiaZona = zonaActual.map(p => ({lat: p.lat, lng: p.lng}));
+    zonasPersonal.push(copiaZona);
     guardar();
 
-    console.log("Ruta guardada:", rutasPersonal);
+    // Dibujar zona guardada
+    L.polygon(copiaZona, {
+        color: 'red',
+        weight: 2,
+        fillColor: 'red',
+        fillOpacity: 0.3
+    }).addTo(capaZonas);
 
-    // Dibujar la nueva ruta con curva si aplica
-    let reconstruida = copiaRuta.map(p => L.latLng(p.lat, p.lng));
-    let rutaLayer;
-    if(reconstruida.length >= 3){
-        rutaLayer = L.curve(['M', reconstruida[0], 'Q', reconstruida[1], reconstruida[2]], {
-            color:'cyan',
-            weight:3
-        }).addTo(capaRutas);
-    } else {
-        rutaLayer = L.polyline(reconstruida, {
-            color:'cyan',
-            weight:3
-        }).addTo(capaRutas);
-    }
-    rutasDibujadas.push(rutaLayer);
-
-    alert("Ruta guardada correctamente");
+    alert("Zona peligrosa guardada");
 
     // Reset
-    modoRuta = false;
-    rutaActual = [];
-    polyActual = null;
+    modoZona = false;
+    zonaActual = [];
+    polyZonaActual = null;
 }
 
 // Dibujar rutas guardadas al iniciar
@@ -326,6 +341,17 @@ rutasPersonal.forEach((r, index) => {
         }).addTo(capaRutas);
     }
     rutasDibujadas.push(rutaLayer);
+});
+
+// Dibujar zonas guardadas al iniciar
+zonasPersonal.forEach(z => {
+    let reconstruida = z.map(p => L.latLng(p.lat, p.lng));
+    L.polygon(reconstruida, {
+        color: 'red',
+        weight: 2,
+        fillColor: 'red',
+        fillOpacity: 0.3
+    }).addTo(capaZonas);
 });
 
 // ======================
@@ -369,10 +395,40 @@ function animarUltimaRuta(){
     animacionActiva = true;
 }
 
-function detenerAnimacion(){
-    if(rutaAnimada && animacionActiva){
-        rutaAnimada.setStyle({className: ''});
-        animacionActiva = false;
+function planificarRutaOptima(){
+    if(datosPersonal.length < 2){
+        alert("Necesitas al menos 2 puertos marcados");
+        return;
+    }
+
+    let puertos = datosPersonal.filter(d => d.tipo === 'port');
+    if(puertos.length < 2){
+        alert("Necesitas al menos 2 puertos");
+        return;
+    }
+
+    // Algoritmo simple: encontrar la ruta más corta entre todos los puertos
+    let mejorRuta = [];
+    let menorDistancia = Infinity;
+
+    // Para simplicidad, conectar todos en orden
+    for(let i = 0; i < puertos.length - 1; i++){
+        let dist = map.distance(puertos[i].latlng, puertos[i+1].latlng);
+        if(dist < menorDistancia){
+            menorDistancia = dist;
+            mejorRuta = [puertos[i], puertos[i+1]];
+        }
+    }
+
+    if(mejorRuta.length === 2){
+        let rutaOptima = [mejorRuta[0].latlng, mejorRuta[1].latlng];
+        rutasPersonal.push(rutaOptima.map(p => ({lat: p.lat, lng: p.lng})));
+        guardar();
+
+        let rutaLayer = L.polyline(rutaOptima, {color: 'green', weight: 4}).addTo(capaRutas);
+        rutasDibujadas.push(rutaLayer);
+
+        alert(`Ruta óptima planificada entre ${mejorRuta[0].nombre} y ${mejorRuta[1].nombre}`);
     }
 }
 
@@ -381,7 +437,7 @@ function detenerAnimacion(){
 // ======================
 
 function exportarDatos(){
-    var data={marcas:datosPersonal,rutas:rutasPersonal};
+    var data={marcas:datosPersonal,rutas:rutasPersonal,zonas:zonasPersonal};
     var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     var a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
@@ -399,17 +455,36 @@ function togglePersonal(){
 }
 
 function resetPersonal(){
-    if(confirm("Seguro?")){
+    if(confirm("Seguro? Esto borrará todas las marcas, rutas y zonas.")){
         localStorage.clear();
         location.reload();
     }
 }
 
-// ======================
-// CARGA INICIAL
-// ======================
-
-datosPersonal.forEach((d,i)=>dibujarMarca(d,i));
+// Cargar puertos desde JSON
+fetch('puertos.json')
+    .then(response => response.json())
+    .then(data => {
+        data.forEach(puerto => {
+            // Agregar como marca si no existe
+            let existe = datosPersonal.some(d => d.nombre === puerto.puerto);
+            if(!existe){
+                let marca = {
+                    tipo: 'port',
+                    nombre: puerto.puerto,
+                    latlng: L.latLng(puerto.y, puerto.x), // Nota: y,x en lugar de lat,lng
+                    compra: puerto.precio,
+                    venta: puerto.precio + 20, // Estimado
+                    riesgo: 'Medio',
+                    nota: `Carga: ${puerto.carga}`
+                };
+                datosPersonal.push(marca);
+                dibujarMarca(marca, datosPersonal.length - 1);
+            }
+        });
+        guardar();
+    })
+    .catch(err => console.log('No se pudo cargar puertos.json', err));
 
 </script>
 </body>
