@@ -159,25 +159,61 @@
     </div>
 
     <script>
-        // Inicializamos el mapa con Leaflet
-        var map = L.map('map', {
-            crs: L.CRS.Simple,
-            minZoom: -1,
-            maxZoom: 2,
-            zoomSnap: 0.1,
-            attributionControl: false
-        });
+        // 1. INICIALIZACIÓN DEL MOTOR
+var map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -1,
+    maxZoom: 2,
+    zoomSnap: 0.1,
+    attributionControl: false
+});
 
-        // Límites del mapa (ajustables según tu imagen)
-        var bounds = [[0, 0], [1000, 1300]]; 
-        L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
-        map.fitBounds(bounds);
+var bounds = [[0, 0], [1000, 1300]]; 
+L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
+map.fitBounds(bounds);
 
-        // Seguimiento de coordenadas
-        map.on('mousemove', function(e) {
-            document.getElementById('coords').innerHTML = 
-                `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
-        });
+// 2. LÓGICA DE SELECCIÓN DE ICONOS
+var iconoSeleccionado = null;
+
+// Buscamos todos los botones de la paleta
+document.querySelectorAll('.icon-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        // Quitamos el brillo a cualquier otro botón
+        document.querySelectorAll('.icon-btn').forEach(b => b.style.borderColor = '#3d3d3d');
+        
+        // "Encendemos" el que tocamos
+        this.style.borderColor = '#f1c40f';
+        this.style.boxShadow = '0 0 10px #f1c40f';
+        
+        // Guardamos la ruta de la imagen seleccionada
+        iconoSeleccionado = this.querySelector('img').src;
+        console.log("Icono listo para plantar: " + iconoSeleccionado);
+    });
+});
+
+// 3. PLANTAR ICONOS (Clic Derecho)
+map.on('contextmenu', function(e) {
+    if (!iconoSeleccionado) {
+        alert("¡Capitán! Primero seleccione un icono de la derecha.");
+        return;
+    }
+
+    // Creamos un icono personalizado para Leaflet
+    var customIcon = L.icon({
+        iconUrl: iconoSeleccionado,
+        iconSize: [35, 35], // Tamaño del icono en el mapa
+        iconAnchor: [17, 17], // Centrado
+    });
+
+    // Añadimos el marcador al mapa en las coordenadas del clic
+    L.marker(e.latlng, { icon: customIcon }).addTo(map);
+});
+
+// 4. SEGUIMIENTO DE COORDENADAS
+map.on('mousemove', function(e) {
+    document.getElementById('coords').innerHTML = 
+        `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
+});
     </script>
 </body>
 </html>
