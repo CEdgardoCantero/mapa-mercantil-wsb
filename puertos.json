@@ -1,0 +1,16 @@
+[
+  {
+    "puerto": "Tortuga",
+    "x": 450,
+    "y": 800,
+    "carga": "Ron",
+    "precio": 120
+  },
+  {
+    "puerto": "Puerto Real",
+    "x": 720,
+    "y": 1100,
+    "carga": "Madera",
+    "precio": 85
+  }
+]
