@@ -137,6 +137,43 @@
     border: 3px solid #f1c40f;
     transform: scale(1.2);
 }
+   <style>
+        /* (Mantenemos tus estilos anteriores y agregamos los del Popup) */
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background-color: #0d0d0d; font-family: 'Courier New', monospace; display: flex; overflow: hidden; background-image: radial-gradient(circle at center, #001f3f 0%, #0d0d0d 100%); }
+        body::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: url('https://www.transparenttextures.com/patterns/dark-matter.png'); opacity: 0.1; animation: oceanFlow 60s linear infinite; z-index: -1; }
+        @keyframes oceanFlow { from { transform: translate(0, 0); } to { transform: translate(-100px, -100px); } }
+        #main-container { display: grid; grid-template-columns: 1fr 200px; width: 100vw; height: 100vh; }
+        #map-area { display: flex; justify-content: center; align-items: center; perspective: 1500px; }
+        #war-table { width: 70vw; height: 75vh; background-color: #2c1e16; border: 12px solid #3d2b1f; border-radius: 4px; box-shadow: 0 40px 70px rgba(0,0,0,0.9), inset 0 0 30px rgba(0,0,0,0.5); transform: rotateX(25deg) rotateZ(-0.5deg); transform-style: preserve-3d; position: relative; overflow: hidden; }
+        #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
+        #map:active { cursor: grabbing; }
+        .leaflet-control-zoom { display: none !important; }
+        #zoom-controls { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 5px; }
+        .zoom-btn { width: 35px; height: 35px; background: rgba(0,0,0,0.8); border: 1px solid #f1c40f; color: #f1c40f; cursor: pointer; font-size: 20px; font-weight: bold; }
+        #palette { background-color: #1a1a1a; border-left: 1px solid #3d3d3d; padding: 10px; display: flex; flex-direction: column; overflow-y: auto; z-index: 2000; }
+        .palette-title { color: #f1c40f; text-align: center; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid #333; }
+        #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
+        .icon-btn { width: 65px; height: 65px; background-color: #262626; border: 1px solid #3d3d3d; border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .icon-btn img { width: 45px; height: 45px; object-fit: contain; }
+        .icon-btn:hover { border-color: #f1c40f; }
+        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: auto; }
+        .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
+        .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 8px; margin-top: 10px; cursor: pointer; font-size: 10px; font-weight: bold; }
+        #coords { text-align: center; color: #888; font-size: 10px; margin-top: 5px; }
+        
+        /* ESTILOS DE LOS MARCADORES */
+        .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
+        .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; background: rgba(0, 0, 0, 0.3); position: absolute; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .marker-icon-img { width: 28px; height: 28px; z-index: 2; object-fit: contain; }
+        .color-dot.active { border: 3px solid #f1c40f; transform: scale(1.2); }
+
+        /* ESTILO DEL MENÚ (POPUP) */
+        .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 8px; }
+        .popup-menu { display: flex; flex-direction: column; gap: 4px; }
+        .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 6px; cursor: pointer; font-size: 10px; font-family: 'Courier New', monospace; font-weight: bold; }
+        .popup-btn:hover { background: #4e342e; border-color: #f1c40f; }
+        .btn-delete { color: #ff4d4d; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -183,78 +220,84 @@
                 <div class="color-dot" style="background-color: #ff33d1;"></div>
                 <div class="color-dot" style="background-color: #33ff4d;"></div>
             </div>
-            <button class="action-btn">OCULTAR TODO</button>
+            <button class="action-btn" id="btn-clear">OCULTAR TODO</button>
             <div id="coords">X: 0 | Y: 0</div>
         </div>
     </div>
 
     <script>
-    var map = L.map('map', {
-    crs: L.CRS.Simple,
-    minZoom: -1,
-    maxZoom: 2,
-    zoomSnap: 0.1,
-    attributionControl: false
-});
+        // 1. INICIALIZACIÓN
+        var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, zoomSnap: 0.1, attributionControl: false });
+        var bounds = [[0, 0], [1000, 1300]]; 
+        L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
+        map.fitBounds(bounds);
 
-var bounds = [[0, 0], [1000, 1300]]; 
-L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
-map.fitBounds(bounds);
+        // Capa para organizar marcadores
+        var capaMarcadores = L.layerGroup().addTo(map);
 
-// VARIABLES DE ESTADO
-var iconoSeleccionado = null;
-var colorSeleccionado = 'white'; // Color por defecto
+        // 2. ESTADO
+        var iconoSeleccionado = null;
+        var colorSeleccionado = 'white';
 
-// SELECCIÓN DE ICONO
-document.querySelectorAll('.icon-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.icon-btn').forEach(b => {
-            b.style.borderColor = '#3d3d3d';
-            b.style.boxShadow = 'none';
+        // 3. EVENTOS DE PALETA
+        document.querySelectorAll('.icon-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.icon-btn').forEach(b => { b.style.borderColor = '#3d3d3d'; b.style.boxShadow = 'none'; });
+                this.style.borderColor = '#f1c40f';
+                this.style.boxShadow = '0 0 10px #f1c40f';
+                iconoSeleccionado = this.querySelector('img').src;
+            });
         });
-        this.style.borderColor = '#f1c40f';
-        this.style.boxShadow = '0 0 10px #f1c40f';
-        iconoSeleccionado = this.querySelector('img').src;
-    });
-});
 
-// SELECCIÓN DE COLOR
-document.querySelectorAll('.color-dot').forEach(dot => {
-    dot.addEventListener('click', function() {
-        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-        this.classList.add('active');
-        colorSeleccionado = this.style.backgroundColor;
-    });
-});
+        document.querySelectorAll('.color-dot').forEach(dot => {
+            dot.addEventListener('click', function() {
+                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+                this.classList.add('active');
+                colorSeleccionado = this.style.backgroundColor;
+            });
+        });
 
-// PLANTAR CON CÍRCULO DE COLOR (Clic Derecho)
-map.on('contextmenu', function(e) {
-    if (!iconoSeleccionado) {
-        alert("¡Capitán! Primero seleccione un icono.");
-        return;
-    }
+        // 4. PLANTAR MARCADO CON MENÚ
+        map.on('contextmenu', function(e) {
+            if (!iconoSeleccionado) { alert("¡Capitán! Seleccione un icono primero."); return; }
 
-    // Creamos un elemento HTML personalizado para el marcador
-    var markerHtml = `
-        <div class="custom-marker-container">
-            <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
-            <img src="${iconoSeleccionado}" class="marker-icon-img">
-        </div>`;
+            var markerHtml = `
+                <div class="custom-marker-container">
+                    <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
+                    <img src="${iconoSeleccionado}" class="marker-icon-img">
+                </div>`;
 
-    var customIcon = L.divIcon({
-        html: markerHtml,
-        className: '', // Quitamos clases por defecto de Leaflet
-        iconSize: [40, 40],
-        iconAnchor: [20, 20] // Precisión: mitad de 40 para que quede centrado al mouse
-    });
+            var customIcon = L.divIcon({ html: markerHtml, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+            
+            var m = L.marker(e.latlng, { icon: customIcon }).addTo(capaMarcadores);
 
-    L.marker(e.latlng, { icon: customIcon }).addTo(map);
-});
+            // Menú interactivo
+            var menu = L.DomUtil.create('div', 'popup-menu');
+            
+            var btnMercado = L.DomUtil.create('button', 'popup-btn', menu);
+            btnMercado.innerHTML = "VER MERCADO";
+            btnMercado.onclick = () => alert("Mercado próximamente...");
 
-map.on('mousemove', function(e) {
-    document.getElementById('coords').innerHTML = 
-        `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
-});
+            var btnInfo = L.DomUtil.create('button', 'popup-btn', menu);
+            btnInfo.innerHTML = "INFORMACIÓN";
+
+            var btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
+            btnBorrar.innerHTML = "ELIMINAR";
+            btnBorrar.onclick = () => { map.closePopup(); capaMarcadores.removeLayer(m); };
+
+            m.bindPopup(menu);
+        });
+
+        // 5. LIMPIAR TODO
+        document.getElementById('btn-clear').onclick = function() {
+            if(confirm("¿Limpiar todos los planes de la mesa?")) {
+                capaMarcadores.clearLayers();
+            }
+        };
+
+        map.on('mousemove', function(e) {
+            document.getElementById('coords').innerHTML = `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
+        });
     </script>
 </body>
 </html>
