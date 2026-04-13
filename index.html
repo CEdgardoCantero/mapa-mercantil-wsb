@@ -1,59 +1,64 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estrategia Naval - Gremio WSB</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
-        #map { height: 100vh; width: 100%; background: #1a1a1a; }
-        
-        .ui-panel {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(15, 15, 15, 0.9); border: 2px solid #f1c40f;
-            padding: 15px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            max-width: 200px;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estrategia Naval - Gremio WSB</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
+        #map { height: 100vh; width: 100%; background: #1a1a1a; cursor: crosshair; }
+        
+        .ui-panel {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: rgba(15, 15, 15, 0.9); border: 2px solid #f1c40f;
+            padding: 15px; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 200px;
+        }
 
-        .section-title { border-bottom: 1px solid #f1c40f; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
-        
-        .boton-ui {
-            background: transparent; color: #f1c40f; border: 1px solid #f1c40f;
-            padding: 5px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 11px;
-        }
-        .boton-ui:hover { background: #f1c40f; color: black; }
-        .boton-borrar { color: #e74c3c; border-color: #e74c3c; }
+        .section-title { border-bottom: 1px solid #f1c40f; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
+        
+        .boton-ui {
+            background: transparent; color: #f1c40f; border: 1px solid #f1c40f;
+            padding: 5px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 11px;
+            font-weight: bold; text-transform: uppercase;
+        }
+        .boton-ui:hover { background: #f1c40f; color: black; }
+        .boton-borrar { color: #e74c3c; border-color: #e74c3c; }
 
-        /* Estilo para distinguir tipos de iconos */
-        .port-card { text-align: center; min-width: 140px; }
-    </style>
+        .port-card { text-align: center; min-width: 140px; color: #f1c40f; }
+        .port-card h3 { margin: 0; border-bottom: 1px solid #f1c40f; padding-bottom: 5px; }
+    </style>
 </head>
 <body>
 
-    <div class="ui-panel">
-        <div class="section-title">⚓ DATOS DEL GREMIO</div>
-        <p style="font-size: 10px;">Actualizado desde Excel central</p>
-        
-        <div class="section-title" style="margin-top:15px;">📜 MI BITÁCORA</div>
-        <button class="boton-ui" onclick="togglePersonal()">MOSTRAR/OCULTAR MIS PUNTOS</button>
-        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MI MAPA</button>
-    </div>
+    <div class="ui-panel">
+        <div class="section-title">⚓ DATOS DEL GREMIO</div>
+        <p style="font-size: 10px; margin-top: -5px;">(Sincronizado con Excel)</p>
+        
+        <div class="section-title" style="margin-top:15px;">📜 MI BITÁCORA</div>
+        <button class="boton-ui" onclick="togglePersonal()">VER/OCULTAR MIS PUNTOS</button>
+        <button class="boton-ui boton-borrar" onclick="borrarTodo()">RESETEAR MI MAPA</button>
+    </div>
 
-    <div id="map"></div>
+    <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
-   <script>
+    <script>
         // 1. CONFIGURACIÓN DEL MAPA
-        var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
-        var bounds = [[0, 0], [1500, 2000]];
+        var map = L.map('map', { 
+            crs: L.CRS.Simple, 
+            minZoom: -1,
+            attributionControl: false 
+        });
+
+        var bounds = [[0, 0], [1500, 2000]]; // Ajusta según el tamaño de tu mapa_juego.jpg
         L.imageOverlay('mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        // Capas para separar Gremio de Personal
+        // Capas separadas
         var capaGremio = L.layerGroup().addTo(map);
         var capaPersonal = L.layerGroup().addTo(map);
 
@@ -68,7 +73,7 @@
             iconSize: [25, 25], iconAnchor: [12, 12]
         });
 
-        // 3. CARGA DESDE GOOGLE SHEETS
+        // 3. CARGA DE EXCEL (GREMIO)
         const googleSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQqSCUDEKeGxbn1VQ2lObyN8hoNG-6uRRbqHleytYUih-7RJgu46RAqEKG_tIzIVcKeSecn5iTRRzvb/pub?gid=0&single=true&output=csv'; 
 
         Papa.parse(googleSheetURL, {
@@ -76,27 +81,27 @@
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                console.log("Cargando datos del Gremio...");
+                console.log("Datos cargados: ", results.data.length);
                 results.data.forEach(fila => {
-                    let val1 = parseFloat(fila.CoordenadaX || fila.x || fila.X);
-                    let val2 = parseFloat(fila.CoordenadaY || fila.y || fila.Y);
-                    let puerto = fila.Puerto || "Puerto";
-
-                    if (!isNaN(val1) && !isNaN(val2)) {
-                        L.marker([val1, val2], {icon: iconoGremio}).addTo(capaGremio)
+                    let x = parseFloat(fila.CoordenadaX || fila.x || fila.X);
+                    let y = parseFloat(fila.CoordenadaY || fila.y || fila.Y);
+                    
+                    // Solo dibuja si tiene coordenadas válidas y distintas de cero
+                    if (!isNaN(x) && !isNaN(y) && (x !== 0 || y !== 0)) {
+                        L.marker([x, y], {icon: iconoGremio}).addTo(capaGremio)
                          .bindPopup(`
                             <div class="port-card">
-                                <h3>${puerto}</h3>
-                                <p>📦 ${fila.Mercancia || '---'}</p>
-                                <p>💰 ${fila.precio || '0'} pz</p>
+                                <h3>${fila.Puerto || 'Puerto'}</h3>
+                                <p>📦 <b>Carga:</b> ${fila.Mercancia || '---'}</p>
+                                <p>💰 <b>Precio:</b> ${fila.precio || '0'} pz</p>
                             </div>
                          `);
                     }
                 });
             }
-        }); // <-- Aquí estaba el error de la llave extra
+        });
 
-        // 4. SISTEMA PERSONAL (LOCALSTORAGE)
+        // 4. SISTEMA DE BITÁCORA PERSONAL (LocalStorage)
         var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
 
         function cargarPersonales() {
@@ -111,41 +116,58 @@
                 <div class="port-card">
                     <b>MARCA PERSONAL</b><br>
                     <input type="text" value="${nota}" onchange="actualizarNota(${id}, this.value)" 
-                           style="background:#000; color:#f1c40f; border:1px solid #444; width:80%; margin:5px 0;">
-                    <button class="boton-ui" style="color:red;" onclick="borrarPunto(${id})">ELIMINAR</button>
+                           style="background:#000; color:#f1c40f; border:1px solid #444; width:90%; margin:5px 0; padding:3px;">
+                    <button class="boton-ui" style="color:#e74c3c; border-color:#e74c3c;" onclick="borrarPunto(${id})">BORRAR</button>
                 </div>
             `);
+            // Guardar posición si se arrastra
+            m.on('dragend', function() {
+                misPuntos[id].latlng = m.getLatLng();
+                localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
+            });
         }
 
-        // 5. INTERACCIÓN
-        // Coordenadas con Clic Izquierdo (Para que sepas donde estas)
+        function actualizarNota(id, nuevaNota) {
+            misPuntos[id].nota = nuevaNota;
+            localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
+        }
+
+        // 5. INTERACCIONES DE CLIC
         var coordPopup = L.popup();
+
+        // Clic Izquierdo: Muestra coordenadas para tu Excel
         map.on('click', function(e) {
             coordPopup
                 .setLatLng(e.latlng)
-                .setContent("X: " + e.latlng.lat.toFixed(0) + " | Y: " + e.latlng.lng.toFixed(0))
+                .setContent(`
+                    <div style="text-align:center;">
+                        <b>COORDENADAS EXCEL</b><br>
+                        X: ${e.latlng.lat.toFixed(0)}<br>
+                        Y: ${e.latlng.lng.toFixed(0)}
+                    </div>
+                `)
                 .openOn(map);
         });
 
-        // Marca Personal con Clic Derecho
+        // Clic Derecho: Crea punto personal
         map.on('contextmenu', function(e) {
-            let nota = prompt("Nombre del punto personal:");
-            if (nota !== null) {
-                let nuevoPunto = { latlng: e.latlng, nota: nota };
-                misPuntos.push(nuevoPunto);
+            let nombre = prompt("Nombre de tu marca personal:");
+            if (nombre !== null) {
+                let p = { latlng: e.latlng, nota: nombre || "Punto de Interés" };
+                misPuntos.push(p);
                 localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
-                dibujarPuntoPersonal(e.latlng, nota, misPuntos.length - 1);
+                dibujarPuntoPersonal(p.latlng, p.nota, misPuntos.length - 1);
             }
         });
 
-        // FUNCIONES DE CONTROL
+        // FUNCIONES DEL PANEL
         function togglePersonal() {
-            if (map.hasLayer(capaPersonal)) { map.removeLayer(capaPersonal); }
-            else { map.addLayer(capaPersonal); }
+            if (map.hasLayer(capaPersonal)) map.removeLayer(capaPersonal);
+            else map.addLayer(capaPersonal);
         }
 
         function borrarTodo() {
-            if(confirm("¿Borrar todos tus puntos personales?")) {
+            if(confirm("¿Seguro que quieres limpiar tu bitácora personal?")) {
                 localStorage.removeItem('puntos_personales_wsb');
                 location.reload();
             }
@@ -157,6 +179,7 @@
             location.reload();
         }
 
+        // Arrancar bitácora
         cargarPersonales();
     </script>
 </body>
