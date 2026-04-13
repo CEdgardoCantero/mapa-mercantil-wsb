@@ -75,7 +75,7 @@
 
         // 3. CARGA DE EXCEL (GREMIO)
         // 3. CARGA DE DATOS DEL GREMIO (Desde archivo local JSON)
-        fetch('puertos.json')
+        fetch('puertos.json?v=' + Date.now()) // Agregamos un número único al final
             .then(response => response.json())
             .then(data => {
                 console.log("Datos del gremio sincronizados:", data.length);
