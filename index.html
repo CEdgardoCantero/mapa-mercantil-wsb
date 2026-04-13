@@ -107,6 +107,36 @@
             font-size: 10px; font-weight: bold;
         }
         #coords { text-align: center; color: #888; font-size: 10px; margin-top: 5px; }
+        /* Estilo para el marcador con círculo de color */
+.custom-marker-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.marker-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid white; /* Color por defecto */
+    background: rgba(0, 0, 0, 0.3);
+    position: absolute;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.marker-icon-img {
+    width: 28px;
+    height: 28px;
+    z-index: 2;
+    object-fit: contain;
+}
+
+/* Efecto de selección en la paleta */
+.color-dot.active {
+    border: 3px solid #f1c40f;
+    transform: scale(1.2);
+}
     </style>
 </head>
 <body>
