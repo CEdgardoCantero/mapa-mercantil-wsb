@@ -324,7 +324,7 @@ function suavizarRuta(puntos){
 // ======================
 
 // ======================
-// ANIMACION NAVAL FLOW FIX CRS.SIMPLE
+// ANIMACION NAVAL ESTABLE REAL
 // ======================
 
 var barcoAnimado = null;
@@ -336,9 +336,12 @@ function animarRuta(ruta){
         map.removeLayer(barcoAnimado);
     }
 
+    if(ruta.length < 2) return;
+
     animacionActiva = true;
 
-    if(ruta.length < 2) return;
+    // Convertimos ruta a puntos de capa (pixeles reales)
+    let puntosPixeles = ruta.map(p => map.latLngToLayerPoint(p));
 
     let barcoIcon = L.icon({
         iconUrl:'assets/iconos/ship.png',
@@ -347,24 +350,22 @@ function animarRuta(ruta){
         className:'barco-rotable'
     });
 
-    barcoAnimado = L.marker(ruta[0],{
-        icon:barcoIcon
-    }).addTo(map);
+    barcoAnimado = L.marker(ruta[0],{ icon:barcoIcon }).addTo(map);
 
     let segmento = 0;
     let progreso = 0;
-    let velocidad = 0.003; // más pequeño = más lento
+    let velocidad = 0.01; // velocidad visual real
     let tiempo = 0;
 
     function animar(){
 
         if(!animacionActiva) return;
 
-        let p1 = ruta[segmento];
-        let p2 = ruta[segmento + 1];
+        let p1 = puntosPixeles[segmento];
+        let p2 = puntosPixeles[segmento + 1];
 
         if(!p2){
-            segmento = 0; // loop limpio
+            segmento = 0;
             progreso = 0;
             requestAnimationFrame(animar);
             return;
@@ -377,17 +378,18 @@ function animarRuta(ruta){
             segmento++;
         }
 
-        let lat = p1.lat + (p2.lat - p1.lat) * progreso;
-        let lng = p1.lng + (p2.lng - p1.lng) * progreso;
+        let x = p1.x + (p2.x - p1.x) * progreso;
+        let y = p1.y + (p2.y - p1.y) * progreso;
 
-        barcoAnimado.setLatLng([lat, lng]);
+        // Convertimos de pixeles a LatLng correctamente
+        let nuevaLatLng = map.layerPointToLatLng(L.point(x,y));
+        barcoAnimado.setLatLng(nuevaLatLng);
 
-        // Rotación correcta en CRS.Simple
-        let dx = p2.lng - p1.lng;
-        let dy = p2.lat - p1.lat;
+        // Rotación correcta
+        let dx = p2.x - p1.x;
+        let dy = p2.y - p1.y;
         let angulo = Math.atan2(dy, dx) * 180 / Math.PI;
 
-        // Balanceo suave
         tiempo += 0.05;
         let balanceo = Math.sin(tiempo) * 5;
 
