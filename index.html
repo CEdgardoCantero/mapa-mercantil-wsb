@@ -74,6 +74,7 @@ select,input,textarea{
 
 <div class="section-title">⚓ MODO</div>
 <button class="boton-ui" onclick="togglePersonal()">Mostrar/Ocultar Personal</button>
+<button class="boton-ui" onclick="marcarPosicionActual()">Marcar Posición Actual</button>
 <button class="boton-ui" onclick="activarModoZona()">Modo Zona Peligrosa</button>
 <button class="boton-ui" onclick="guardarZonaActual()">Guardar Zona</button>
 <button class="boton-ui" onclick="calcularGanancia()">Calcular Ganancia</button>
@@ -129,11 +130,35 @@ select,input,textarea{
 // ======================
 
 var usuarioActual = localStorage.getItem('wsb_usuario') || 'default';
+var posicionActual = JSON.parse(localStorage.getItem('wsb_' + usuarioActual + '_posicion')) || null;
 
 function cambiarUsuario(){
     usuarioActual = document.getElementById('usuario').value || 'default';
     localStorage.setItem('wsb_usuario', usuarioActual);
     location.reload(); // Recargar para cargar datos del nuevo usuario
+}
+
+function marcarPosicionActual(){
+    // Pedir al usuario hacer click en el mapa para marcar posición
+    alert("Haz click en el mapa para marcar tu posición actual");
+    map.once('click', function(e){
+        posicionActual = {lat: e.latlng.lat, lng: e.latlng.lng};
+        localStorage.setItem('wsb_' + usuarioActual + '_posicion', JSON.stringify(posicionActual));
+        
+        // Dibujar marcador de posición actual
+        if(window.marcadorPosicion){
+            map.removeLayer(window.marcadorPosicion);
+        }
+        window.marcadorPosicion = L.marker(posicionActual, {
+            icon: L.icon({
+                iconUrl: 'assets/iconos/ship.png', // Asumir icono de barco
+                iconSize: [30,30],
+                iconAnchor: [15,15]
+            })
+        }).addTo(map).bindPopup("Tu Posición Actual");
+        
+        alert("Posición actual marcada");
+    });
 }
 
 document.getElementById('usuario').value = usuarioActual;
@@ -354,6 +379,17 @@ zonasPersonal.forEach(z => {
     }).addTo(capaZonas);
 });
 
+// Dibujar posición actual si existe
+if(posicionActual){
+    window.marcadorPosicion = L.marker(posicionActual, {
+        icon: L.icon({
+            iconUrl: 'assets/iconos/ship.png',
+            iconSize: [30,30],
+            iconAnchor: [15,15]
+        })
+    }).addTo(map).bindPopup("Tu Posición Actual");
+}
+
 // ======================
 // SUAVIZAR RUTA
 // ======================
@@ -374,95 +410,89 @@ function suavizarRuta(puntos){
 }
 
 function planificarRutaOptima(){
-    if(datosPersonal.length < 2){
-        alert("Necesitas al menos 2 puertos marcados");
+    if(!posicionActual){
+        alert("Primero marca tu posición actual");
         return;
     }
 
     let puertos = datosPersonal.filter(d => d.tipo === 'port');
-    if(puertos.length < 2){
-        alert("Necesitas al menos 2 puertos");
+    if(puertos.length < 1){
+        alert("Necesitas al menos 1 puerto marcado");
         return;
     }
 
-    // Algoritmo: encontrar la ruta más corta entre cualquier par de puertos
-    let mejorRuta = [];
+    // Encontrar el puerto más cercano desde la posición actual
+    let mejorPuerto = null;
     let menorDistancia = Infinity;
 
-    for(let i = 0; i < puertos.length; i++){
-        for(let j = i + 1; j < puertos.length; j++){
-            let dist = map.distance(puertos[i].latlng, puertos[j].latlng);
-            if(dist < menorDistancia){
-                menorDistancia = dist;
-                mejorRuta = [puertos[i], puertos[j]];
-            }
+    puertos.forEach(puerto => {
+        let dist = map.distance(posicionActual, puerto.latlng);
+        if(dist < menorDistancia){
+            menorDistancia = dist;
+            mejorPuerto = puerto;
         }
-    }
+    });
 
-    if(mejorRuta.length === 2){
-        let rutaOptima = [mejorRuta[0].latlng, mejorRuta[1].latlng];
+    if(mejorPuerto){
+        let rutaOptima = [posicionActual, mejorPuerto.latlng];
         rutasPersonal.push(rutaOptima.map(p => ({lat: p.lat, lng: p.lng})));
         guardar();
 
         let rutaLayer = L.polyline(rutaOptima, {color: 'green', weight: 4}).addTo(capaRutas);
         rutasDibujadas.push(rutaLayer);
 
-        alert(`Ruta óptima planificada entre ${mejorRuta[0].nombre} y ${mejorRuta[1].nombre} (distancia: ${menorDistancia.toFixed(0)} unidades)`);
+        alert(`Ruta óptima planificada desde tu posición a ${mejorPuerto.nombre} (distancia: ${menorDistancia.toFixed(0)} unidades)`);
     }
 }
 
 function rutaSegura(){
-    if(datosPersonal.length < 2 || zonasPersonal.length === 0){
-        alert("Necesitas puertos marcados y zonas peligrosas");
+    if(!posicionActual){
+        alert("Primero marca tu posición actual");
         return;
     }
 
     let puertos = datosPersonal.filter(d => d.tipo === 'port');
-    if(puertos.length < 2) return;
-
-    // Algoritmo: encontrar ruta que no cruce zonas peligrosas
-    let mejorRuta = null;
-    let menorIntersecciones = Infinity;
-
-    for(let i = 0; i < puertos.length; i++){
-        for(let j = i + 1; j < puertos.length; j++){
-            let p1 = puertos[i].latlng;
-            let p2 = puertos[j].latlng;
-
-            // Crear línea con Turf
-            let line = turf.lineString([[p1.lng, p1.lat], [p2.lng, p2.lat]]);
-            let intersecciones = 0;
-
-            // Verificar intersección con cada zona
-            zonasPersonal.forEach(zona => {
-                let polyCoords = zona.map(p => [p.lng, p.lat]);
-                polyCoords.push(polyCoords[0]); // Cerrar polígono
-                let polygon = turf.polygon([polyCoords]);
-                if(turf.booleanIntersects(line, polygon)){
-                    intersecciones++;
-                }
-            });
-
-            if(intersecciones < menorIntersecciones){
-                menorIntersecciones = intersecciones;
-                mejorRuta = [puertos[i], puertos[j]];
-            }
-        }
+    if(puertos.length < 1 || zonasPersonal.length === 0){
+        alert("Necesitas puertos marcados y zonas peligrosas");
+        return;
     }
 
-    if(mejorRuta && menorIntersecciones === 0){
-        let rutaSegura = [mejorRuta[0].latlng, mejorRuta[1].latlng];
+    // Encontrar el puerto más cercano que no cruce zonas
+    let mejorPuerto = null;
+    let menorIntersecciones = Infinity;
+
+    puertos.forEach(puerto => {
+        let line = turf.lineString([[posicionActual.lng, posicionActual.lat], [puerto.latlng.lng, puerto.latlng.lat]]);
+        let intersecciones = 0;
+
+        zonasPersonal.forEach(zona => {
+            let polyCoords = zona.map(p => [p.lng, p.lat]);
+            polyCoords.push(polyCoords[0]);
+            let polygon = turf.polygon([polyCoords]);
+            if(turf.booleanIntersects(line, polygon)){
+                intersecciones++;
+            }
+        });
+
+        if(intersecciones < menorIntersecciones){
+            menorIntersecciones = intersecciones;
+            mejorPuerto = puerto;
+        }
+    });
+
+    if(mejorPuerto && menorIntersecciones === 0){
+        let rutaSegura = [posicionActual, mejorPuerto.latlng];
         rutasPersonal.push(rutaSegura.map(p => ({lat: p.lat, lng: p.lng})));
         guardar();
 
         let rutaLayer = L.polyline(rutaSegura, {color: 'yellow', weight: 4}).addTo(capaRutas);
         rutasDibujadas.push(rutaLayer);
 
-        alert(`Ruta segura planificada entre ${mejorRuta[0].nombre} y ${mejorRuta[1].nombre}`);
-    } else if(mejorRuta){
-        alert(`No hay ruta completamente segura. La mejor opción cruza ${menorIntersecciones} zona(s).`);
+        alert(`Ruta segura planificada desde tu posición a ${mejorPuerto.nombre}`);
+    } else if(mejorPuerto){
+        alert(`No hay ruta completamente segura. La mejor opción a ${mejorPuerto.nombre} cruza ${menorIntersecciones} zona(s).`);
     } else {
-        alert("No se pudo encontrar una ruta.");
+        alert("No se pudo encontrar una ruta segura.");
     }
 }
 
@@ -509,10 +539,11 @@ function togglePersonal(){
 }
 
 function resetPersonal(){
-    if(confirm("Seguro? Esto borrará todas las marcas, rutas y zonas del usuario actual.")){
+    if(confirm("Seguro? Esto borrará todas las marcas, rutas, zonas y posición del usuario actual.")){
         localStorage.removeItem('wsb_' + usuarioActual + '_personal_v2');
         localStorage.removeItem('wsb_' + usuarioActual + '_rutas_v2');
         localStorage.removeItem('wsb_' + usuarioActual + '_zonas_v2');
+        localStorage.removeItem('wsb_' + usuarioActual + '_posicion');
         location.reload();
     }
 }
