@@ -74,32 +74,25 @@
         });
 
         // 3. CARGA DE EXCEL (GREMIO)
-        const googleSheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQqSCUDEKeGxbn1VQ2lObyN8hoNG-6uRRbqHleytYUih-7RJgu46RAqEKG_tIzIVcKeSecn5iTRRzvb/pub?gid=0&single=true&output=csv'; 
-
-        Papa.parse(googleSheetURL, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                console.log("Datos cargados: ", results.data.length);
-                results.data.forEach(fila => {
-                    let x = parseFloat(fila.CoordenadaX || fila.x || fila.X);
-                    let y = parseFloat(fila.CoordenadaY || fila.y || fila.Y);
-                    
-                    // Solo dibuja si tiene coordenadas válidas y distintas de cero
-                    if (!isNaN(x) && !isNaN(y) && (x !== 0 || y !== 0)) {
-                        L.marker([x, y], {icon: iconoGremio}).addTo(capaGremio)
+        // 3. CARGA DE DATOS DEL GREMIO (Desde archivo local JSON)
+        fetch('puertos.json')
+            .then(response => response.json())
+            .then(data => {
+                console.log("Datos del gremio sincronizados:", data.length);
+                data.forEach(fila => {
+                    if (fila.x !== 0 || fila.y !== 0) {
+                        L.marker([fila.x, fila.y], {icon: iconoGremio}).addTo(capaGremio)
                          .bindPopup(`
                             <div class="port-card">
-                                <h3>${fila.Puerto || 'Puerto'}</h3>
-                                <p>📦 <b>Carga:</b> ${fila.Mercancia || '---'}</p>
-                                <p>💰 <b>Precio:</b> ${fila.precio || '0'} pz</p>
+                                <h3>${fila.puerto}</h3>
+                                <p>📦 <b>Carga:</b> ${fila.carga}</p>
+                                <p>💰 <b>Precio:</b> ${fila.precio} pz</p>
                             </div>
                          `);
                     }
                 });
-            }
-        });
+            })
+            .catch(error => console.error("Error cargando bitácora del gremio:", error));
 
         // 4. SISTEMA DE BITÁCORA PERSONAL (LocalStorage)
         var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
