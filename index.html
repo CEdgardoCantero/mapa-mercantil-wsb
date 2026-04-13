@@ -67,6 +67,20 @@ select,input,textarea{
     transition: transform 0.05s linear;
     transform-origin: center center;
 }
+
+.barco-fijo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -335,40 +349,29 @@ function suavizarRuta(puntos){
 var barcoAnimado = null;
 var animacionActiva = false;
 var idAnimacion = null;
+var barcoFijo = null;
 
 function animarRuta(ruta){
 
-    if(barcoAnimado){
-        map.removeLayer(barcoAnimado);
+    if(barcoFijo){
+        document.body.removeChild(barcoFijo);
+        barcoFijo = null;
     }
 
     if(ruta.length < 2) return;
 
     animacionActiva = true;
 
-    // Icono HTML personalizado (IMPORTANTE)
-    let barcoIcon = L.divIcon({
-        className: '',
-        html: `
-            <div id="barco-wrapper" style="
-                width:70px;
-                height:70px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-            ">
-                <img src="assets/iconos/ship.png"
-                     style="width:70px;height:70px;"
-                     id="barco-img">
-            </div>
-        `,
-        iconSize: [70,70],
-        iconAnchor: [35,35]
-    });
-
-    barcoAnimado = L.marker(ruta[0],{
-        icon:barcoIcon
-    }).addTo(map);
+    // Crear elemento barquito fijo en la pantalla
+    barcoFijo = document.createElement('div');
+    barcoFijo.className = 'barco-fijo';
+    barcoFijo.innerHTML = `
+        <img src="assets/iconos/ship.png"
+             style="width:100px;height:100px;"
+             id="barco-img"
+             alt="barco">
+    `;
+    document.body.appendChild(barcoFijo);
 
     let distanciaTotal = 0;
     let progreso = 0;
@@ -419,15 +422,13 @@ function animarRuta(ruta){
         let data = obtenerPuntoEnRuta(progreso * distanciaTotal);
         
         if(data){
-            barcoAnimado.setLatLng(data.punto);
-            
-            // Mantener el mapa centrado en el barco
+            // El mapa se mueve hacia el barquito (el barquito es fijo en pantalla)
             map.setView(data.punto, map.getZoom(), {animate: false});
 
             tiempo += 0.05;
             let balanceo = Math.sin(tiempo) * 5;
 
-            // 🔥 Rotamos la imagen
+            // 🔥 Rotamos el barquito fijo
             let img = document.getElementById("barco-img");
             if(img){
                 img.style.transform = `rotate(${data.angulo + balanceo}deg)`;
@@ -444,6 +445,10 @@ function detenerAnimacion(){
     animacionActiva = false;
     if(idAnimacion){
         cancelAnimationFrame(idAnimacion);
+    }
+    if(barcoFijo){
+        document.body.removeChild(barcoFijo);
+        barcoFijo = null;
     }
 }
 
