@@ -63,23 +63,14 @@ select,input,textarea{
     font-size:11px;
 }
 
-.barco-rotable{
-    transition: transform 0.05s linear;
-    transform-origin: center center;
+.ruta-flow {
+    stroke-dasharray: 10, 10;
+    animation: flow 2s linear infinite;
 }
 
-.barco-fijo {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 999;
-    width: 100px;
-    height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
+@keyframes flow {
+    0% { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 0; }
 }
 </style>
 </head>
@@ -129,6 +120,7 @@ select,input,textarea{
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-curve@0.7.0/src/leaflet-curve.js"></script>
 
 <script>
 
@@ -292,6 +284,22 @@ function guardarRutaActual(){
 
     console.log("Ruta guardada:", rutasPersonal);
 
+    // Dibujar la nueva ruta con curva si aplica
+    let reconstruida = copiaRuta.map(p => L.latLng(p.lat, p.lng));
+    let rutaLayer;
+    if(reconstruida.length >= 3){
+        rutaLayer = L.curve(['M', reconstruida[0], 'Q', reconstruida[1], reconstruida[2]], {
+            color:'cyan',
+            weight:3
+        }).addTo(capaRutas);
+    } else {
+        rutaLayer = L.polyline(reconstruida, {
+            color:'cyan',
+            weight:3
+        }).addTo(capaRutas);
+    }
+    rutasDibujadas.push(rutaLayer);
+
     alert("Ruta guardada correctamente");
 
     // Reset
@@ -301,14 +309,23 @@ function guardarRutaActual(){
 }
 
 // Dibujar rutas guardadas al iniciar
-rutasPersonal.forEach(r => {
-
+let rutasDibujadas = [];
+rutasPersonal.forEach((r, index) => {
     let reconstruida = r.map(p => L.latLng(p.lat, p.lng));
-
-    L.polyline(reconstruida, {
-        color:'cyan',
-        weight:3
-    }).addTo(capaRutas);
+    let rutaLayer;
+    if(reconstruida.length >= 3){
+        // Usar curva Bézier simple
+        rutaLayer = L.curve(['M', reconstruida[0], 'Q', reconstruida[1], reconstruida[2]], {
+            color:'cyan',
+            weight:3
+        }).addTo(capaRutas);
+    } else {
+        rutaLayer = L.polyline(reconstruida, {
+            color:'cyan',
+            weight:3
+        }).addTo(capaRutas);
+    }
+    rutasDibujadas.push(rutaLayer);
 });
 
 // ======================
@@ -331,139 +348,32 @@ function suavizarRuta(puntos){
 }
 
 // ======================
-// ANIMACION BARCO
+// ANIMACION RUTA - EFECTO FLOW
 // ======================
 
-// ======================
-// ANIMACION NAVAL PRO
-// ======================
-
-// ======================
-// ANIMACION NAVAL ESTABLE REAL
-// ======================
-
-// ======================
-// ANIMACION NAVAL CORRECTA (NO ROMPE TRANSFORM)
-// ======================
-
-var barcoAnimado = null;
 var animacionActiva = false;
-var idAnimacion = null;
-var barcoFijo = null;
-
-function animarRuta(ruta){
-
-    if(barcoFijo){
-        document.body.removeChild(barcoFijo);
-        barcoFijo = null;
-    }
-
-    if(ruta.length < 2) return;
-
-    animacionActiva = true;
-
-    // Crear elemento barquito fijo en la pantalla
-    barcoFijo = document.createElement('div');
-    barcoFijo.className = 'barco-fijo';
-    barcoFijo.innerHTML = `
-        <img src="assets/iconos/ship.png"
-             style="width:100px;height:100px;"
-             id="barco-img"
-             alt="barco">
-    `;
-    document.body.appendChild(barcoFijo);
-
-    let distanciaTotal = 0;
-    let progreso = 0;
-    let velocidad = 0.002;
-    let tiempo = 0;
-
-    // Calcular distancia total de la ruta
-    for(let i = 0; i < ruta.length - 1; i++){
-        let p1 = ruta[i];
-        let p2 = ruta[i + 1];
-        let dx = p2.lng - p1.lng;
-        let dy = p2.lat - p1.lat;
-        distanciaTotal += Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function obtenerPuntoEnRuta(distancia){
-        let distActual = 0;
-        for(let i = 0; i < ruta.length - 1; i++){
-            let p1 = ruta[i];
-            let p2 = ruta[i + 1];
-            let dx = p2.lng - p1.lng;
-            let dy = p2.lat - p1.lat;
-            let distSegmento = Math.sqrt(dx * dx + dy * dy);
-            
-            if(distActual + distSegmento >= distancia){
-                let t = (distancia - distActual) / distSegmento;
-                return {
-                    punto: L.latLng(
-                        p1.lat + (p2.lat - p1.lat) * t,
-                        p1.lng + (p2.lng - p1.lng) * t
-                    ),
-                    angulo: Math.atan2(dy, dx) * 180 / Math.PI,
-                    segmento: i
-                };
-            }
-            distActual += distSegmento;
-        }
-        return null;
-    }
-
-    function animar(){
-
-        if(!animacionActiva) return;
-
-        // Progreso en bucle infinito
-        progreso = (progreso + velocidad) % 1;
-
-        let data = obtenerPuntoEnRuta(progreso * distanciaTotal);
-        
-        if(data){
-            // El mapa se mueve hacia el barquito (el barquito es fijo en pantalla)
-            map.setView(data.punto, map.getZoom(), {animate: false});
-
-            tiempo += 0.05;
-            let balanceo = Math.sin(tiempo) * 5;
-
-            // 🔥 Rotamos el barquito fijo
-            let img = document.getElementById("barco-img");
-            if(img){
-                img.style.transform = `rotate(${data.angulo + balanceo}deg)`;
-            }
-        }
-
-        idAnimacion = requestAnimationFrame(animar);
-    }
-
-    idAnimacion = requestAnimationFrame(animar);
-}
-
-function detenerAnimacion(){
-    animacionActiva = false;
-    if(idAnimacion){
-        cancelAnimationFrame(idAnimacion);
-    }
-    if(barcoFijo){
-        document.body.removeChild(barcoFijo);
-        barcoFijo = null;
-    }
-}
+var rutaAnimada = null;
 
 function animarUltimaRuta(){
 
-    if(rutasPersonal.length === 0){
+    if(rutasDibujadas.length === 0){
         alert("No hay rutas guardadas");
         return;
     }
 
-    let rutaRaw = rutasPersonal[rutasPersonal.length - 1];
+    // Detener animación anterior si existe
+    detenerAnimacion();
 
-    let rutaConvertida = rutaRaw.map(p => L.latLng(p.lat, p.lng));
+    rutaAnimada = rutasDibujadas[rutasDibujadas.length - 1];
+    rutaAnimada.setStyle({className: 'ruta-flow'});
+    animacionActiva = true;
+}
 
-    animarRuta(rutaConvertida);
+function detenerAnimacion(){
+    if(rutaAnimada && animacionActiva){
+        rutaAnimada.setStyle({className: ''});
+        animacionActiva = false;
+    }
 }
 
 // ======================
