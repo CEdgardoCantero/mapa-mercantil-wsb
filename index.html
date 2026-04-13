@@ -76,6 +76,7 @@ select,input,textarea{
 <div class="section-title">⚓ MODO</div>
 <button class="boton-ui" onclick="togglePersonal()">Mostrar/Ocultar Personal</button>
 <button class="boton-ui" onclick="activarModoRuta()">Modo Ruta</button>
+<button class="boton-ui" onclick="guardarRutaActual()">Guardar Ruta</button>
 <button class="boton-ui" onclick="animarUltimaRuta()">Animar Última Ruta</button>
 <button class="boton-ui" onclick="exportarDatos()">Exportar Local</button>
 <button class="boton-ui" onclick="resetPersonal()" style="color:#e74c3c;border-color:#e74c3c;">Reset Personal</button>
@@ -219,36 +220,55 @@ map.on("contextmenu",function(e){
 // RUTAS
 // ======================
 
+// ======================
+// RUTAS
+// ======================
+
 var modoRuta=false;
 var rutaActual=[];
 var polyActual=null;
 
 function activarModoRuta(){
     modoRuta=!modoRuta;
-    alert(modoRuta?"Modo Ruta ACTIVADO":"Modo Ruta DESACTIVADO");
+    rutaActual=[];
+    if(polyActual){
+        capaRutas.removeLayer(polyActual);
+        polyActual=null;
+    }
+    alert(modoRuta?"Modo Ruta ACTIVADO (haz click para marcar puntos)":"Modo Ruta DESACTIVADO");
 }
 
 map.on("click",function(e){
+
     if(!modoRuta) return;
 
     rutaActual.push(e.latlng);
 
-    if(polyActual) capaRutas.removeLayer(polyActual);
+    if(polyActual){
+        capaRutas.removeLayer(polyActual);
+    }
 
     polyActual=L.polyline(rutaActual,{color:'cyan'}).addTo(capaRutas);
 });
 
-map.on("dblclick",function(){
-    if(rutaActual.length>1){
-        rutasPersonal.push(rutaActual);
-        guardar();
-        alert("Ruta guardada");
+function guardarRutaActual(){
+
+    if(rutaActual.length < 2){
+        alert("Necesitas al menos 2 puntos para guardar una ruta");
+        return;
     }
+
+    rutasPersonal.push([...rutaActual]);
+    guardar();
+
+    alert("Ruta guardada correctamente");
+
     rutaActual=[];
     polyActual=null;
     modoRuta=false;
-});
+}
 
+// Dibujar rutas guardadas al iniciar
 rutasPersonal.forEach(r=>{
     L.polyline(r,{color:'cyan'}).addTo(capaRutas);
 });
