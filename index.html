@@ -3,107 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estrategia Naval - Gremio WSB</title>
+    <title>Cartografía Naval - Gremio WSB</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; background: #0d0d0d; font-family: 'Courier New', monospace; color: #f1c40f; }
         #map { height: 100vh; width: 100%; background: #1a1a1a; cursor: crosshair; }
+        
+        /* Panel Estilo Pergamino */
         .ui-panel {
             position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: rgba(15, 15, 15, 0.9); border: 2px solid #f1c40f;
-            padding: 15px; border-radius: 8px; max-width: 200px;
+            background: rgba(25, 20, 10, 0.95); border: 2px solid #b8860b;
+            padding: 15px; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            width: 220px;
         }
-        .section-title { border-bottom: 1px solid #f1c40f; margin-bottom: 10px; font-size: 14px; font-weight: bold; }
+
+        .section-title { border-bottom: 2px dashed #b8860b; margin-bottom: 10px; font-weight: bold; text-align: center; }
+        
         .boton-ui {
-            background: transparent; color: #f1c40f; border: 1px solid #f1c40f;
-            padding: 5px; cursor: pointer; width: 100%; margin-bottom: 5px; font-size: 11px;
+            background: #332b1a; color: #f1c40f; border: 1px solid #b8860b;
+            padding: 8px; cursor: pointer; width: 100%; margin-bottom: 5px;
+            font-size: 12px; font-weight: bold;
         }
         .boton-ui:hover { background: #f1c40f; color: black; }
-        .port-card { text-align: center; min-width: 140px; color: #f1c40f; }
+        
+        /* Estilo de los Popups */
+        .menu-creacion button { display: block; width: 100%; margin: 5px 0; padding: 5px; cursor: pointer; background: #222; color: #eee; border: 1px solid #555; text-align: left; }
+        .menu-creacion button:hover { background: #444; }
     </style>
 </head>
 <body>
 
     <div class="ui-panel">
-        <div class="section-title">⚓ DATOS DEL GREMIO</div>
-        <p style="font-size: 10px;">Sincronizado vía JSON</p>
-        <div class="section-title" style="margin-top:15px;">📜 MI BITÁCORA</div>
-        <button class="boton-ui" onclick="togglePersonal()">VER/OCULTAR MIS PUNTOS</button>
-        <button class="boton-ui" style="color:#e74c3c;" onclick="borrarTodo()">RESETEAR MAPA</button>
+        <div class="section-title">🛠️ MAESTRO CARTÓGRAFO</div>
+        <p style="font-size: 11px; text-align: center;">Click derecho en el mar para colocar un objeto.</p>
+        <button class="boton-ui" onclick="exportarDatos()">📥 EXPORTAR MAPA (Log)</button>
+        <button class="boton-ui" style="color: #ff4d4d; border-color: #ff4d4d;" onclick="borrarTodo()">🧹 LIMPIAR TODO</button>
+        <hr border="1">
+        <div id="coordenadas-live" style="font-size: 10px; text-align: center; color: #888;">X: 0 | Y: 0</div>
     </div>
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // 1. INICIALIZACIÓN
         var map = L.map('map', { crs: L.CRS.Simple, minZoom: -1 });
         var bounds = [[0, 0], [1500, 2000]];
         L.imageOverlay('mapa_juego.jpg', bounds).addTo(map);
         map.fitBounds(bounds);
 
-        var capaGremio = L.layerGroup().addTo(map);
-        var capaPersonal = L.layerGroup().addTo(map);
+        // 2. CATÁLOGO DE ICONOS (Añade los que quieras aquí)
+        var catalogo = {
+            puerto: { nombre: "Puerto Aliado", icon: "https://cdn-icons-png.flaticon.com/512/2942/2942023.png" },
+            enemigo: { nombre: "Puerto Enemigo", icon: "https://cdn-icons-png.flaticon.com/512/10563/10563236.png" },
+            tesoro: { nombre: "Naufragio/Tesoro", icon: "https://cdn-icons-png.flaticon.com/512/4150/4150371.png" },
+            peligro: { nombre: "Zona de Peligro", icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png" }
+        };
 
-        var iconoGremio = L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/2942/2942023.png',
-            iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30]
-        });
+        // 3. CARGA DE MEMORIA
+        var marcadoresEnMapa = JSON.parse(localStorage.getItem('mapa_wsb_persistente')) || [];
 
-        // CARGA INSTANTÁNEA (Evita el caché de GitHub)
-        fetch('puertos.json?v=' + Date.now())
-            .then(res => res.json())
-            .then(data => {
-                data.forEach(p => {
-                    L.marker([p.x, p.y], {icon: iconoGremio}).addTo(capaGremio)
-                     .bindPopup(`
-                        <div class="port-card">
-                            <h3>${p.puerto}</h3>
-                            <p>📦 <b>Carga:</b> ${p.carga}</p>
-                            <p>💰 <b>Precio:</b> ${p.precio} pz</p>
-                        </div>
-                     `);
-                });
+        function renderizarMapa() {
+            map.eachLayer(l => { if(l instanceof L.Marker) map.removeLayer(l); });
+            marcadoresEnMapa.forEach((m, index) => {
+                crearMarcadorFisico(m.latlng, m.tipo, m.nota, index);
+            });
+        }
+
+        function crearMarcadorFisico(latlng, tipo, nota, id) {
+            var iconoConfig = L.icon({
+                iconUrl: catalogo[tipo].icon,
+                iconSize: [32, 32], iconAnchor: [16, 32]
             });
 
-        // CLIC IZQUIERDO: Coordenadas
-        var coordPopup = L.popup();
-        map.on('click', function(e) {
-            coordPopup.setLatLng(e.latlng)
-                .setContent("X: " + e.latlng.lat.toFixed(0) + " | Y: " + e.latlng.lng.toFixed(0))
-                .openOn(map);
-        });
+            var m = L.marker(latlng, { icon: iconoConfig, draggable: true }).addTo(map);
+            
+            m.bindPopup(`
+                <div style="text-align:center;">
+                    <b style="color:darkgoldenrod">${catalogo[tipo].nombre}</b><br>
+                    <input type="text" value="${nota}" onchange="editarNota(${id}, this.value)" style="width:120px; margin:5px 0;"><br>
+                    <small>Coord: ${latlng.lat.toFixed(0)}, ${latlng.lng.toFixed(0)}</small><br>
+                    <button onclick="eliminarMarcador(${id})" style="color:red; margin-top:5px; cursor:pointer;">Eliminar</button>
+                </div>
+            `);
 
-        // BITÁCORA PERSONAL (Clic Derecho)
-        var misPuntos = JSON.parse(localStorage.getItem('puntos_personales_wsb')) || [];
-        function cargarPersonales() {
-            misPuntos.forEach((p, i) => dibujarPuntoPersonal(p.latlng, p.nota, i));
+            m.on('dragend', function() {
+                marcadoresEnMapa[id].latlng = m.getLatLng();
+                guardarYRefrescar();
+            });
         }
 
-        function dibujarPuntoPersonal(latlng, nota, id) {
-            L.marker(latlng, { draggable: true }).addTo(capaPersonal)
-             .bindPopup(`<b>${nota}</b><br><button onclick="location.reload();">Borrar punto (F5)</button>`);
-        }
-
-        map.on('contextmenu', e => {
-            let n = prompt("Nombre:");
-            if(n) {
-                misPuntos.push({latlng: e.latlng, nota: n});
-                localStorage.setItem('puntos_personales_wsb', JSON.stringify(misPuntos));
-                dibujarPuntoPersonal(e.latlng, n, misPuntos.length-1);
+        // 4. INTERACCIONES
+        map.on('contextmenu', function(e) {
+            var menuHTML = `<div class="menu-creacion"><b>¿Qué hay aquí?</b><hr>`;
+            for (var key in catalogo) {
+                menuHTML += `<button onclick="insertarPunto('${key}', ${e.latlng.lat}, ${e.latlng.lng})">
+                    <img src="${catalogo[key].icon}" width="15"> ${catalogo[key].nombre}
+                </button>`;
             }
+            menuHTML += `</div>`;
+
+            L.popup().setLatLng(e.latlng).setContent(menuHTML).openOn(map);
         });
 
-        function togglePersonal() {
-            if (map.hasLayer(capaPersonal)) map.removeLayer(capaPersonal);
-            else map.addLayer(capaPersonal);
+        // Seguimiento de coordenadas para el panel
+        map.on('mousemove', e => {
+            document.getElementById('coordenadas-live').innerHTML = `X: ${e.latlng.lat.toFixed(0)} | Y: ${e.latlng.lng.toFixed(0)}`;
+        });
+
+        // 5. LÓGICA DE DATOS
+        function insertarPunto(tipo, lat, lng) {
+            map.closePopup();
+            var nota = prompt("Nombre o descripción del sitio:", catalogo[tipo].nombre);
+            if (nota !== null) {
+                marcadoresEnMapa.push({ latlng: [lat, lng], tipo: tipo, nota: nota });
+                guardarYRefrescar();
+            }
+        }
+
+        function editarNota(id, texto) {
+            marcadoresEnMapa[id].nota = texto;
+            localStorage.setItem('mapa_wsb_persistente', JSON.stringify(marcadoresEnMapa));
+        }
+
+        function eliminarMarcador(id) {
+            marcadoresEnMapa.splice(id, 1);
+            guardarYRefrescar();
+        }
+
+        function guardarYRefrescar() {
+            localStorage.setItem('mapa_wsb_persistente', JSON.stringify(marcadoresEnMapa));
+            renderizarMapa();
         }
 
         function borrarTodo() {
-            localStorage.removeItem('puntos_personales_wsb');
-            location.reload();
+            if(confirm("¿Seguro que quieres hundir todo el mapa?")) {
+                marcadoresEnMapa = [];
+                guardarYRefrescar();
+            }
         }
 
-        cargarPersonales();
+        function exportarDatos() {
+            console.log("DATOS PARA EXCEL/JSON:", JSON.stringify(marcadoresEnMapa));
+            alert("Los datos se han enviado a la Consola (F12). Puedes copiarlos para pasarlos a tus compañeros.");
+        }
+
+        renderizarMapa();
     </script>
 </body>
 </html>
