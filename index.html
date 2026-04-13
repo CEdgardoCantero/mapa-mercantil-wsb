@@ -8,38 +8,65 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
-body { margin:0; background:#0d0d0d; font-family:Courier New; color:#f1c40f; }
-#map { height:100vh; }
+body {
+    margin:0;
+    background:#0d0d0d;
+    font-family:Courier New;
+    color:#f1c40f;
+}
+
+#map {
+    height:100vh;
+}
 
 .ui-panel{
-position:absolute; right:10px; top:10px; z-index:1000;
-background:#111; border:2px solid #f1c40f;
-padding:15px; width:260px; border-radius:8px;
+    position:absolute;
+    right:10px;
+    top:10px;
+    z-index:1000;
+    background:#111;
+    border:2px solid #f1c40f;
+    padding:15px;
+    width:260px;
+    border-radius:8px;
 }
 
 .section-title{
-border-bottom:1px solid #f1c40f;
-margin-bottom:8px; font-size:13px; font-weight:bold;
+    border-bottom:1px solid #f1c40f;
+    margin-bottom:8px;
+    font-size:13px;
+    font-weight:bold;
 }
 
 .boton-ui{
-background:transparent; color:#f1c40f;
-border:1px solid #f1c40f;
-padding:5px; width:100%;
-margin-bottom:6px; cursor:pointer;
+    background:transparent;
+    color:#f1c40f;
+    border:1px solid #f1c40f;
+    padding:5px;
+    width:100%;
+    margin-bottom:6px;
+    cursor:pointer;
 }
 
-.boton-ui:hover{ background:#f1c40f; color:black; }
+.boton-ui:hover{
+    background:#f1c40f;
+    color:black;
+}
 
 select,input,textarea{
-width:100%; margin-bottom:5px;
-background:#000; color:#f1c40f;
-border:1px solid #444; padding:3px;
-font-size:11px;
+    width:100%;
+    margin-bottom:5px;
+    background:#000;
+    color:#f1c40f;
+    border:1px solid #444;
+    padding:3px;
+    font-size:11px;
 }
 
-textarea{ resize:none; }
-
+.barco-rotable{
+    transition: transform 0.05s linear;
+    transform-origin: center center;
+}
 </style>
 </head>
 <body>
@@ -49,6 +76,7 @@ textarea{ resize:none; }
 <div class="section-title">⚓ MODO</div>
 <button class="boton-ui" onclick="togglePersonal()">Mostrar/Ocultar Personal</button>
 <button class="boton-ui" onclick="activarModoRuta()">Modo Ruta</button>
+<button class="boton-ui" onclick="animarUltimaRuta()">Animar Última Ruta</button>
 <button class="boton-ui" onclick="exportarDatos()">Exportar Local</button>
 <button class="boton-ui" onclick="resetPersonal()" style="color:#e74c3c;border-color:#e74c3c;">Reset Personal</button>
 
@@ -92,7 +120,13 @@ textarea{ resize:none; }
 // CONFIG MAPA
 // ======================
 
-var map = L.map('map',{crs:L.CRS.Simple,minZoom:-1,attributionControl:false});
+var map = L.map('map',{
+    crs:L.CRS.Simple,
+    minZoom:-1,
+    attributionControl:false,
+    doubleClickZoom:false
+});
+
 var bounds=[[0,0],[1500,2000]];
 L.imageOverlay('mapa_juego.jpg',bounds).addTo(map);
 map.fitBounds(bounds);
@@ -101,19 +135,19 @@ var capaPersonal=L.layerGroup().addTo(map);
 var capaRutas=L.layerGroup().addTo(map);
 
 // ======================
-// ICONOS DISPONIBLES
+// ICONOS
 // ======================
 
 var iconos={
-port:'assets/iconos/port.png',
-city:'assets/iconos/city.png',
-fort:'assets/iconos/fort.png',
-bay:'assets/iconos/bay.png',
-farm:'assets/iconos/farm.png',
-iron:'assets/iconos/iron.png',
-wood:'assets/iconos/wood.png',
-rum:'assets/iconos/rum.png',
-water:'assets/iconos/water.png'
+    port:'assets/iconos/port.png',
+    city:'assets/iconos/city.png',
+    fort:'assets/iconos/fort.png',
+    bay:'assets/iconos/bay.png',
+    farm:'assets/iconos/farm.png',
+    iron:'assets/iconos/iron.png',
+    wood:'assets/iconos/wood.png',
+    rum:'assets/iconos/rum.png',
+    water:'assets/iconos/water.png'
 };
 
 // ======================
@@ -124,69 +158,65 @@ var datosPersonal=JSON.parse(localStorage.getItem('wsb_personal_v2'))||[];
 var rutasPersonal=JSON.parse(localStorage.getItem('wsb_rutas_v2'))||[];
 
 function guardar(){
-localStorage.setItem('wsb_personal_v2',JSON.stringify(datosPersonal));
-localStorage.setItem('wsb_rutas_v2',JSON.stringify(rutasPersonal));
+    localStorage.setItem('wsb_personal_v2',JSON.stringify(datosPersonal));
+    localStorage.setItem('wsb_rutas_v2',JSON.stringify(rutasPersonal));
 }
 
 // ======================
-// DIBUJAR MARCAS
+// MARCAS
 // ======================
 
 function dibujarMarca(data,index){
 
-var icono=L.icon({
-iconUrl:iconos[data.tipo],
-iconSize:[30,30],
-iconAnchor:[15,30]
-});
+    var icono=L.icon({
+        iconUrl:iconos[data.tipo],
+        iconSize:[30,30],
+        iconAnchor:[15,30]
+    });
 
-var marker=L.marker(data.latlng,{icon:icono,draggable:true}).addTo(capaPersonal);
+    var marker=L.marker(data.latlng,{icon:icono,draggable:true}).addTo(capaPersonal);
 
-marker.bindPopup(`
-<b>${data.nombre}</b><br>
-Compra: ${data.compra||"-"}<br>
-Venta: ${data.venta||"-"}<br>
-Riesgo: ${data.riesgo}<br>
-${data.nota||""}
-<br><br>
-<button onclick="borrarMarca(${index})">BORRAR</button>
-`);
+    marker.bindPopup(`
+        <b>${data.nombre}</b><br>
+        Compra: ${data.compra||"-"}<br>
+        Venta: ${data.venta||"-"}<br>
+        Riesgo: ${data.riesgo}<br>
+        ${data.nota||""}
+        <br><br>
+        <button onclick="borrarMarca(${index})">BORRAR</button>
+    `);
 
-marker.on("dragend",function(){
-datosPersonal[index].latlng=marker.getLatLng();
-guardar();
-});
+    marker.on("dragend",function(){
+        datosPersonal[index].latlng=marker.getLatLng();
+        guardar();
+    });
 }
 
 function borrarMarca(i){
-datosPersonal.splice(i,1);
-guardar();
-location.reload();
+    datosPersonal.splice(i,1);
+    guardar();
+    location.reload();
 }
-
-// ======================
-// CREAR MARCA
-// ======================
 
 map.on("contextmenu",function(e){
 
-var data={
-tipo:document.getElementById("tipoIcono").value,
-nombre:document.getElementById("nombre").value||"Sin Nombre",
-compra:document.getElementById("compra").value,
-venta:document.getElementById("venta").value,
-riesgo:document.getElementById("riesgo").value,
-nota:document.getElementById("nota").value,
-latlng:e.latlng
-};
+    var data={
+        tipo:document.getElementById("tipoIcono").value,
+        nombre:document.getElementById("nombre").value||"Sin Nombre",
+        compra:document.getElementById("compra").value,
+        venta:document.getElementById("venta").value,
+        riesgo:document.getElementById("riesgo").value,
+        nota:document.getElementById("nota").value,
+        latlng:e.latlng
+    };
 
-datosPersonal.push(data);
-guardar();
-dibujarMarca(data,datosPersonal.length-1);
+    datosPersonal.push(data);
+    guardar();
+    dibujarMarca(data,datosPersonal.length-1);
 });
 
 // ======================
-// SISTEMA DE RUTAS
+// RUTAS
 // ======================
 
 var modoRuta=false;
@@ -194,57 +224,118 @@ var rutaActual=[];
 var polyActual=null;
 
 function activarModoRuta(){
-modoRuta=!modoRuta;
-alert(modoRuta?"Modo Ruta ACTIVADO":"Modo Ruta DESACTIVADO");
+    modoRuta=!modoRuta;
+    alert(modoRuta?"Modo Ruta ACTIVADO":"Modo Ruta DESACTIVADO");
 }
 
 map.on("click",function(e){
+    if(!modoRuta) return;
 
-if(!modoRuta) return;
+    rutaActual.push(e.latlng);
 
-rutaActual.push(e.latlng);
+    if(polyActual) capaRutas.removeLayer(polyActual);
 
-if(polyActual) capaRutas.removeLayer(polyActual);
-
-polyActual=L.polyline(rutaActual,{color:'cyan'}).addTo(capaRutas);
-
+    polyActual=L.polyline(rutaActual,{color:'cyan'}).addTo(capaRutas);
 });
 
 map.on("dblclick",function(){
+    if(rutaActual.length>1){
+        rutasPersonal.push(rutaActual);
+        guardar();
+        alert("Ruta guardada");
+    }
+    rutaActual=[];
+    polyActual=null;
+    modoRuta=false;
+});
 
-if(rutaActual.length>1){
-rutasPersonal.push(rutaActual);
-guardar();
-alert("Ruta guardada");
+rutasPersonal.forEach(r=>{
+    L.polyline(r,{color:'cyan'}).addTo(capaRutas);
+});
+
+// ======================
+// SUAVIZAR RUTA
+// ======================
+
+function suavizarRuta(puntos){
+    let nueva=[];
+    for(let i=0;i<puntos.length-1;i++){
+        let p1=puntos[i];
+        let p2=puntos[i+1];
+        for(let t=0;t<=1;t+=0.03){
+            nueva.push(L.latLng(
+                p1.lat+(p2.lat-p1.lat)*t,
+                p1.lng+(p2.lng-p1.lng)*t
+            ));
+        }
+    }
+    return nueva;
 }
 
-rutaActual=[];
-polyActual=null;
-modoRuta=false;
+// ======================
+// ANIMACION BARCO
+// ======================
 
-});
+function animarRuta(ruta){
 
-// Dibujar rutas guardadas
-rutasPersonal.forEach(r=>{
-L.polyline(r,{color:'cyan'}).addTo(capaRutas);
-});
+    let rutaSuave=suavizarRuta(ruta);
+
+    let barcoIcon=L.icon({
+        iconUrl:'assets/iconos/ship.png',
+        iconSize:[40,40],
+        iconAnchor:[20,20],
+        className:'barco-rotable'
+    });
+
+    let marker=L.marker(rutaSuave[0],{icon:barcoIcon}).addTo(map);
+
+    let i=0;
+
+    let intervalo=setInterval(()=>{
+
+        if(i>=rutaSuave.length-1){
+            clearInterval(intervalo);
+            return;
+        }
+
+        let actual=rutaSuave[i];
+        let siguiente=rutaSuave[i+1];
+
+        marker.setLatLng(actual);
+
+        let dx=siguiente.lng-actual.lng;
+        let dy=siguiente.lat-actual.lat;
+        let angulo=Math.atan2(dy,dx)*180/Math.PI;
+
+        let iconElement=marker.getElement();
+        if(iconElement){
+            iconElement.style.transform=`rotate(${angulo}deg)`;
+        }
+
+        i++;
+
+    },30);
+}
+
+function animarUltimaRuta(){
+    if(rutasPersonal.length>0){
+        animarRuta(rutasPersonal[rutasPersonal.length-1]);
+    }else{
+        alert("No hay rutas guardadas");
+    }
+}
 
 // ======================
 // EXPORTAR
 // ======================
 
 function exportarDatos(){
-
-var data={
-marcas:datosPersonal,
-rutas:rutasPersonal
-};
-
-var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-var a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="mapa_personal_wsb.json";
-a.click();
+    var data={marcas:datosPersonal,rutas:rutasPersonal};
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="mapa_personal_wsb.json";
+    a.click();
 }
 
 // ======================
@@ -252,15 +343,15 @@ a.click();
 // ======================
 
 function togglePersonal(){
-if(map.hasLayer(capaPersonal)) map.removeLayer(capaPersonal);
-else map.addLayer(capaPersonal);
+    if(map.hasLayer(capaPersonal)) map.removeLayer(capaPersonal);
+    else map.addLayer(capaPersonal);
 }
 
 function resetPersonal(){
-if(confirm("Seguro?")){
-localStorage.clear();
-location.reload();
-}
+    if(confirm("Seguro?")){
+        localStorage.clear();
+        location.reload();
+    }
 }
 
 // ======================
