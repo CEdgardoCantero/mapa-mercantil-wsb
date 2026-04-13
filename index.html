@@ -361,11 +361,17 @@ function animarRuta(ruta){
 }
 
 function animarUltimaRuta(){
-    if(rutasPersonal.length>0){
-        animarRuta(rutasPersonal[rutasPersonal.length-1]);
-    }else{
+
+    if(rutasPersonal.length === 0){
         alert("No hay rutas guardadas");
+        return;
     }
+
+    let rutaRaw = rutasPersonal[rutasPersonal.length - 1];
+
+    let rutaConvertida = rutaRaw.map(p => L.latLng(p.lat, p.lng));
+
+    animarRuta(rutaConvertida);
 }
 
 // ======================
