@@ -39,7 +39,6 @@
 
         #map { width: 100%; height: 100%; background: #1a1a1a; cursor: grab; }
 
-        /* PALETA DERECHA */
         #palette {
             background-color: #1a1a1a;
             border-left: 2px solid #3d3d3d;
@@ -49,7 +48,6 @@
             z-index: 2000;
         }
 
-        /* ESTILO DEL SELECTOR DE MODO */
         .mode-container {
             background: #2a1f14;
             padding: 12px;
@@ -59,34 +57,19 @@
             text-align: center;
         }
 
-        #mode-label { 
-            font-size: 11px; 
-            color: #f1c40f; 
-            margin-bottom: 10px; 
-            font-weight: bold;
-            display: block;
-        }
+        #mode-label { font-size: 11px; color: #f1c40f; margin-bottom: 10px; font-weight: bold; display: block; }
 
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #444; transition: .4s; border-radius: 24px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 18px; width: 18px;
-            left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #0088cc; }
         input:checked + .slider:before { transform: translateX(26px); }
 
         .palette-title { color: #f1c40f; text-align: center; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid #333; }
         
         #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .icon-btn { 
-            width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; 
-            display: flex; justify-content: center; align-items: center; cursor: pointer; 
-        }
+        .icon-btn { width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         .icon-btn img { width: 40px; height: 40px; }
         .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
 
@@ -96,16 +79,14 @@
 
         .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 10px; margin-top: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
 
-        /* MARCADORES */
         .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
         .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
         .marker-icon-img { width: 26px; height: 26px; z-index: 2; }
 
-        /* POPUPS */
         .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
-        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; }
+        .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; min-width: 150px; }
         .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
-        .btn-delete { color: #ff4d4d; }
+        .btn-delete { color: #ff4d4d; border-color: #802020; }
     </style>
 </head>
 <body>
@@ -149,57 +130,42 @@
     </div>
 
     <script>
-        // VARIABLES GLOBALES
         var map, capaLocal, capaGremio;
         var iconoActual = null;
         var colorActual = 'white';
         var modoGremio = false;
 
-        // ESPERAR A QUE CARGUE TODO EL HTML
         document.addEventListener('DOMContentLoaded', function() {
-            
-            // 1. Iniciar Mapa
             map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, attributionControl: false });
             var bounds = [[0, 0], [1000, 1300]];
             L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
             map.fitBounds(bounds);
 
-            // 2. Iniciar Capas
             capaLocal = L.layerGroup().addTo(map);
             capaGremio = L.layerGroup();
 
-            // 3. Lógica del Switch de Modo
             document.getElementById('mode-toggle').addEventListener('change', function() {
                 modoGremio = this.checked;
                 const label = document.getElementById('mode-label');
-                
                 if (modoGremio) {
-                    label.innerText = "MODO: GREMIO";
-                    label.style.color = "#33d1ff";
-                    map.addLayer(capaGremio);
-                    map.removeLayer(capaLocal);
+                    label.innerText = "MODO: GREMIO"; label.style.color = "#33d1ff";
+                    map.addLayer(capaGremio); map.removeLayer(capaLocal);
                 } else {
-                    label.innerText = "MODO: LOCAL";
-                    label.style.color = "#f1c40f";
-                    map.addLayer(capaLocal);
-                    map.removeLayer(capaGremio);
+                    label.innerText = "MODO: LOCAL"; label.style.color = "#f1c40f";
+                    map.addLayer(capaLocal); map.removeLayer(capaGremio);
                 }
             });
 
-            // 4. Cargar datos guardados
             cargarMemoria();
 
-            // 5. Clic derecho para poner iconos
             map.on('contextmenu', function(e) {
                 if (!iconoActual) return alert("Selecciona un icono primero");
-
                 const capaActiva = modoGremio ? capaGremio : capaLocal;
                 crearMarcadorEnMapa(e.latlng, iconoActual, colorActual, capaActiva);
                 guardarMemoria();
             });
         });
 
-        // FUNCIONES DE APOYO
         function seleccionarIcono(elemento, ruta) {
             document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('selected'));
             elemento.classList.add('selected');
@@ -213,56 +179,53 @@
         }
 
         function crearMarcadorEnMapa(posicion, imgRuta, color, capa) {
-    const html = `
-        <div class="custom-marker-container">
-            <div class="marker-circle" style="border-color: ${color}"></div>
-            <img src="${imgRuta}" class="marker-icon-img">
-        </div>`;
-    
-    const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
-    const m = L.marker(posicion, { icon: icon }).addTo(capa);
-    
-    vincularMenu(m, capa); // <--- Llamamos a la nueva función
-}
+            const html = `<div class="custom-marker-container">
+                <div class="marker-circle" style="border-color: ${color}"></div>
+                <img src="${imgRuta}" class="marker-icon-img">
+            </div>`;
+            const icon = L.divIcon({ html: html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
+            const m = L.marker(posicion, { icon: icon }).addTo(capa);
+            
+            vincularMenu(m, capa);
+        }
 
         function vincularMenu(m, capa) {
-    const menu = L.DomUtil.create('div', 'popup-menu');
-    
-    const titulo = L.DomUtil.create('div', '', menu);
-    titulo.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>NOTAS COMERCIALES:</strong>";
+            const menu = L.DomUtil.create('div', 'popup-menu');
+            menu.innerHTML = "<strong style='font-size:10px; color:#33d1ff;'>NOTAS COMERCIALES:</strong>";
 
-    const inputNota = L.DomUtil.create('textarea', 'market-input', menu);
-    inputNota.placeholder = "Ej: Compro Ron 50g...";
-    inputNota.style.cssText = "width:100%; height:50px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace;";
+            const inputNota = L.DomUtil.create('textarea', '', menu);
+            inputNota.placeholder = "Ej: Ron 50g...";
+            inputNota.style.cssText = "width:100%; height:50px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace; resize:none;";
 
-    // Recuperar nota si ya existe
-    if (m.options.notaMercado) inputNota.value = m.options.notaMercado;
+            if (m.options.notaMercado) inputNota.value = m.options.notaMercado;
 
-    // Guardar al perder el foco
-    inputNota.onblur = () => {
-        m.options.notaMercado = inputNota.value;
-        guardarMemoria();
-    };
+            inputNota.onblur = () => {
+                m.options.notaMercado = inputNota.value;
+                guardarMemoria();
+            };
 
-    const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-    btnBorrar.innerHTML = "BORRAR";
-    btnBorrar.style.marginTop = "10px";
-    btnBorrar.onclick = () => { 
-        capa.removeLayer(m); 
-        guardarMemoria(); 
-    };
+            const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
+            btnBorrar.innerHTML = "BORRAR MARCADOR";
+            btnBorrar.style.marginTop = "10px";
+            btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
 
-    m.bindPopup(menu);
-}
+            m.bindPopup(menu);
+        }
 
         function guardarMemoria() {
             const extraer = (capa) => {
                 let res = [];
-                capa.eachLayer(l => res.push({ latlng: l.getLatLng(), html: l.options.icon.options.html }));
+                capa.eachLayer(l => {
+                    res.push({ 
+                        latlng: l.getLatLng(), 
+                        html: l.options.icon.options.html,
+                        nota: l.options.notaMercado || "" // <--- AQUÍ SE GUARDA
+                    });
+                });
                 return res;
             };
-            localStorage.setItem('wsb_v2_local', JSON.stringify(extraer(capaLocal)));
-            localStorage.setItem('wsb_v2_gremio', JSON.stringify(extraer(capaGremio)));
+            localStorage.setItem('wsb_v3_local', JSON.stringify(extraer(capaLocal)));
+            localStorage.setItem('wsb_v3_gremio', JSON.stringify(extraer(capaGremio)));
         }
 
         function cargarMemoria() {
@@ -271,16 +234,12 @@
                 datos.forEach(d => {
                     const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
                     const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
-                    
-                    const menu = L.DomUtil.create('div', 'popup-menu');
-                    const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-                    btnBorrar.innerHTML = "BORRAR";
-                    btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
-                    m.bindPopup(menu);
+                    m.options.notaMercado = d.nota; // <--- AQUÍ SE RECUPERA
+                    vincularMenu(m, capa);
                 });
             };
-            reconstruir('wsb_v2_local', capaLocal);
-            reconstruir('wsb_v2_gremio', capaGremio);
+            reconstruir('wsb_v3_local', capaLocal);
+            reconstruir('wsb_v3_gremio', capaGremio);
         }
 
         function limpiarCapaActual() {
