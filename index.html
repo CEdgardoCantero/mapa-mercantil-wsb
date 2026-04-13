@@ -3,124 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diseño Visual - Gremio WSB</title>
+    <title>Mesa de Comandante - Gremio WSB</title>
     <style>
-        /* 1. EL OCEANO (Fondo animado) */
-        body {
-            margin: 0; padding: 0;
-            background-color: #000b1a;
-            height: 100vh; width: 100vw;
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
+        /* 1. ESTRUCTURA Y FONDO (OCEANO) */
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%; 
+            background-color: #0d0d0d;
             font-family: 'Courier New', monospace;
+            display: flex; overflow: hidden;
+            background-image: radial-gradient(circle at center, #001f3f 0%, #0d0d0d 100%);
         }
 
-        .ocean {
-            position: fixed; width: 200%; height: 200%;
-            background: radial-gradient(circle, #002d4d 0%, #000b1a 80%);
-            z-index: -1;
+        /* Agua animada de fondo */
+        body::before {
+            content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: url('https://www.transparenttextures.com/patterns/dark-matter.png');
+            opacity: 0.1; animation: oceanFlow 60s linear infinite; z-index: -1;
+        }
+        @keyframes oceanFlow { from { transform: translate(0, 0); } to { transform: translate(-100px, -100px); } }
+
+        /* Contenedor Principal (Referencia vs 3D) */
+        #main-container {
+            display: grid;
+            grid-template-columns: 1fr 280px; /* Ancho fijo para la paleta */
+            width: 100vw; height: 100vh;
         }
 
-        /* Animación de brillo de agua */
-        .ocean::after {
-            content: ""; position: absolute; width: 100%; height: 100%;
-            background-image: url('https://www.transparenttextures.com/patterns/dark-matter.png');
-            opacity: 0.2; animation: moveWater 40s linear infinite;
-        }
-
-        @keyframes moveWater {
-            from { transform: translate(0, 0); }
-            to { transform: translate(-50px, -50px); }
-        }
-
-        /* 2. ESCENA 3D (El espacio donde vive la mesa) */
-        .scene {
-            perspective: 1200px; /* Esto da la profundidad */
+        /* 2. AREA DEL MAPA (Mesa 3D) */
+        #map-area {
             display: flex; justify-content: center; align-items: center;
-            width: 100%; height: 100%;
+            perspective: 1500px; /* Profundidad */
         }
 
-        /* 3. LA MESA DE MADERA */
-        .table {
-            width: 85vw; height: 80vh;
-            background: #2c1e16; /* Color madera oscura */
+        #war-table {
+            width: 90%; height: 85%;
+            background-color: #2c1e16; /* Madera oscura */
+            background-image: url('assets/mapa_juego.jpg'); /* Imagen de prueba */
+            background-size: cover; background-position: center;
             border: 15px solid #3d2b1f; /* Marco de la mesa */
-            box-shadow: 
-                0 50px 100px rgba(0,0,0,0.8), /* Sombra proyectada en el suelo */
-                inset 0 0 40px rgba(0,0,0,0.7); /* Sombra interna */
+            border-radius: 4px;
+            box-shadow: 0 50px 80px rgba(0,0,0,0.9), inset 0 0 40px rgba(0,0,0,0.7);
             
-            /* INCLINACIÓN AGRESIVA */
-            transform: rotateX(30deg) rotateY(0deg) rotateZ(-1deg);
+            /* INCLINACIÓN AGRESIVA (Igual que referencia pero 3D) */
+            transform: rotateX(25deg) rotateY(0deg) rotateZ(-1deg);
             transform-style: preserve-3d;
             position: relative;
-            transition: transform 0.5s ease;
         }
 
-        /* 4. EL MAPA (Tu asset principal) */
-        .map-asset {
-            width: 100%; height: 100%;
-            background-image: url('mapa_juego.jpg'); /* Tu imagen */
-            background-size: cover;
-            background-position: center;
-            opacity: 0.9;
-            filter: sepia(0.2) contrast(1.1); /* Efecto papel antiguo */
+        /* Botones de Zoom (Igual que referencia) */
+        #zoom-controls {
+            position: absolute; top: 10px; left: 10px; z-index: 10;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .zoom-btn {
+            width: 30px; height: 30px; background: rgba(0,0,0,0.7);
+            border: 1px solid #444; color: #fff; cursor: pointer;
+            font-size: 20px; font-weight: bold;
         }
 
-        /* 5. INTERFAZ DE USUARIO (UI) */
-        /* La UI NO debe estar inclinada para que sea fácil de leer */
-        .ui-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; /* Deja pasar los clics al fondo */
-            z-index: 100;
+        /* 3. PALETA DE HERRAMIENTAS (Barra Derecha) */
+        #palette {
+            background-color: #1a1a1a;
+            border-left: 1px solid #3d3d3d;
+            padding: 20px;
+            display: flex; flex-direction: column;
+            overflow-y: auto;
         }
 
-        .panel {
-            position: absolute; top: 20px; right: 20px;
-            width: 220px; background: rgba(20, 15, 10, 0.95);
-            border: 2px solid #b8860b; padding: 15px;
-            color: #f1c40f; pointer-events: auto;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        .palette-title {
+            color: #f1c40f; text-align: center; font-weight: bold;
+            margin-bottom: 20px; text-transform: uppercase;
+            font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 5px;
         }
 
-        .panel-header {
-            text-align: center; font-weight: bold; border-bottom: 2px dashed #b8860b;
-            margin-bottom: 15px; padding-bottom: 5px; font-size: 14px;
+        /* Grilla de Iconos (Exactamente igual que referencia) */
+        #icon-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+            gap: 15px; margin-bottom: 30px;
         }
 
-        .btn {
-            background: #332b1a; color: #f1c40f; border: 1px solid #b8860b;
-            width: 100%; padding: 8px; margin-bottom: 8px; cursor: pointer;
+        .icon-btn {
+            aspect-ratio: 1/1; /* Cuadrado */
+            background-color: #262626;
+            border: 2px solid #3d3d3d;
+            border-radius: 4px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .icon-btn:hover { border-color: #f1c40f; background-color: #333; }
+        .icon-btn img { width: 80%; height: 80%; object-fit: contain; image-rendering: pixelated; }
+
+        /* Controles Inferiores (Exactamente igual que referencia) */
+        .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: auto; margin-bottom: 10px; }
+        .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.5); }
+
+        .action-btn {
+            background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b;
+            width: 100%; padding: 8px; margin-top: 5px; cursor: pointer;
             font-weight: bold; text-transform: uppercase; font-size: 11px;
         }
 
-        .btn:hover { background: #f1c40f; color: #000; }
-
-        .coords-display {
-            font-size: 10px; color: #888; text-align: center; margin-top: 10px;
-        }
+        /* Ajuste de Popups (Corregir perspectiva) */
+        #coords { text-align: center; color: #888; font-size: 10px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <div class="ocean"></div>
-
-    <div class="scene">
-        <div class="table" id="mainTable">
-            <div class="map-asset"></div>
-            </div>
-    </div>
-
-    <div class="ui-layer">
-        <div class="panel">
-            <div class="panel-header">⚓ CARTOGRAFÍA WSB</div>
-            <button class="btn">Nuevo Marcador</button>
-            <button class="btn">Exportar Log</button>
-            <button class="btn" style="border-color: #ff4d4d; color: #ff4d4d;">Limpiar Mapa</button>
-            
-            <div class="coords-display">
-                LAT: 0.00 | LNG: 0.00
-            </div>
+    <div id="main-container">
+        
+        <div id="map-area">
+            <div id="war-table">
+                <div id="zoom-controls">
+                    <button class="zoom-btn">+</button>
+                    <button class="zoom-btn">-</button>
+                </div>
+                </div>
         </div>
+
+        <div id="palette">
+            <div class="palette-title">Maestro Cartógrafo</div>
+            
+            <div id="icon-grid">
+                <div class="icon-btn" title="Altar"><img src="https://cdn-icons-png.flaticon.com/512/3233/3233857.png"></div>
+                <div class="icon-btn" title="City"><img src="https://cdn-icons-png.flaticon.com/512/2942/2942023.png"></div>
+                <div class="icon-btn" title="Pirate City"><img src="https://cdn-icons-png.flaticon.com/512/10563/10563236.png"></div>
+                <div class="icon-btn" title="Fort"><img src="https://cdn-icons-png.flaticon.com/512/10563/10563236.png"></div>
+                <div class="icon-btn" title="Coal"><img src="https://cdn-icons-png.flaticon.com/512/564/564619.png"></div>
+                <div class="icon-btn" title="Iron"><img src="https://cdn-icons-png.flaticon.com/512/564/564619.png"></div>
+                <div class="icon-btn" title="Wood"><img src="https://cdn-icons-png.flaticon.com/512/564/564619.png"></div>
+                <div class="icon-btn" title="Port"><img src="https://cdn-icons-png.flaticon.com/512/2942/2942023.png"></div>
+                <div class="icon-btn" title="Text Mark"><img src="https://cdn-icons-png.flaticon.com/512/564/564619.png"></div>
+                <div class="icon-btn" title="POI"><img src="https://cdn-icons-png.flaticon.com/512/564/564619.png"></div>
+            </div>
+
+            <div class="color-selector">
+                <div class="color-dot" style="background-color: white;"></div>
+                <div class="color-dot" style="background-color: #33d1ff;"></div>
+                <div class="color-dot" style="background-color: #ff33d1;"></div>
+                <div class="color-dot" style="background-color: #33ff4d;"></div>
+            </div>
+
+            <button class="action-btn">Ocultar Todo</button>
+            <div id="coords">X: 0 | Y: 0</div>
+        </div>
+
     </div>
 
 </body>
