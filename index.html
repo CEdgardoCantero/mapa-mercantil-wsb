@@ -373,6 +373,44 @@ function suavizarRuta(puntos){
     return nueva;
 }
 
+function planificarRutaOptima(){
+    if(datosPersonal.length < 2){
+        alert("Necesitas al menos 2 puertos marcados");
+        return;
+    }
+
+    let puertos = datosPersonal.filter(d => d.tipo === 'port');
+    if(puertos.length < 2){
+        alert("Necesitas al menos 2 puertos");
+        return;
+    }
+
+    // Algoritmo: encontrar la ruta más corta entre cualquier par de puertos
+    let mejorRuta = [];
+    let menorDistancia = Infinity;
+
+    for(let i = 0; i < puertos.length; i++){
+        for(let j = i + 1; j < puertos.length; j++){
+            let dist = map.distance(puertos[i].latlng, puertos[j].latlng);
+            if(dist < menorDistancia){
+                menorDistancia = dist;
+                mejorRuta = [puertos[i], puertos[j]];
+            }
+        }
+    }
+
+    if(mejorRuta.length === 2){
+        let rutaOptima = [mejorRuta[0].latlng, mejorRuta[1].latlng];
+        rutasPersonal.push(rutaOptima.map(p => ({lat: p.lat, lng: p.lng})));
+        guardar();
+
+        let rutaLayer = L.polyline(rutaOptima, {color: 'green', weight: 4}).addTo(capaRutas);
+        rutasDibujadas.push(rutaLayer);
+
+        alert(`Ruta óptima planificada entre ${mejorRuta[0].nombre} y ${mejorRuta[1].nombre} (distancia: ${menorDistancia.toFixed(0)} unidades)`);
+    }
+}
+
 function rutaSegura(){
     if(datosPersonal.length < 2 || zonasPersonal.length === 0){
         alert("Necesitas puertos marcados y zonas peligrosas");
@@ -386,27 +424,29 @@ function rutaSegura(){
     let mejorRuta = null;
     let menorIntersecciones = Infinity;
 
-    for(let i = 0; i < puertos.length - 1; i++){
-        let p1 = puertos[i].latlng;
-        let p2 = puertos[i+1].latlng;
+    for(let i = 0; i < puertos.length; i++){
+        for(let j = i + 1; j < puertos.length; j++){
+            let p1 = puertos[i].latlng;
+            let p2 = puertos[j].latlng;
 
-        // Crear línea con Turf
-        let line = turf.lineString([[p1.lng, p1.lat], [p2.lng, p2.lat]]);
-        let intersecciones = 0;
+            // Crear línea con Turf
+            let line = turf.lineString([[p1.lng, p1.lat], [p2.lng, p2.lat]]);
+            let intersecciones = 0;
 
-        // Verificar intersección con cada zona
-        zonasPersonal.forEach(zona => {
-            let polyCoords = zona.map(p => [p.lng, p.lat]);
-            polyCoords.push(polyCoords[0]); // Cerrar polígono
-            let polygon = turf.polygon([polyCoords]);
-            if(turf.booleanIntersects(line, polygon)){
-                intersecciones++;
+            // Verificar intersección con cada zona
+            zonasPersonal.forEach(zona => {
+                let polyCoords = zona.map(p => [p.lng, p.lat]);
+                polyCoords.push(polyCoords[0]); // Cerrar polígono
+                let polygon = turf.polygon([polyCoords]);
+                if(turf.booleanIntersects(line, polygon)){
+                    intersecciones++;
+                }
+            });
+
+            if(intersecciones < menorIntersecciones){
+                menorIntersecciones = intersecciones;
+                mejorRuta = [puertos[i], puertos[j]];
             }
-        });
-
-        if(intersecciones < menorIntersecciones){
-            menorIntersecciones = intersecciones;
-            mejorRuta = [puertos[i], puertos[i+1]];
         }
     }
 
