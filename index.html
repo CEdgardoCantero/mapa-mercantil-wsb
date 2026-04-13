@@ -66,23 +66,26 @@
         input:checked + .slider { background-color: #0088cc; }
         input:checked + .slider:before { transform: translateX(26px); }
 
-        .palette-title { color: #f1c40f; text-align: center; font-size: 12px; margin-bottom: 15px; border-bottom: 1px solid #333; }
+        .palette-title { color: #f1c40f; text-align: center; font-size: 10px; margin-bottom: 15px; border-bottom: 1px solid #333; letter-spacing: 1px; }
         
         #icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-        .icon-btn { width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .icon-btn { width: 80px; height: 65px; background: #262626; border: 1px solid #3d3d3d; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        .icon-btn:hover { background: #333; }
         .icon-btn img { width: 40px; height: 40px; }
-        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        .icon-btn.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; background: #3d2b1f; }
 
         .color-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 20px; }
         .color-dot { width: 100%; aspect-ratio: 1/1; border-radius: 50%; cursor: pointer; border: 1px solid #444; }
         .color-dot.active { border: 2px solid #f1c40f; transform: scale(1.1); }
 
         .action-btn { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; width: 100%; padding: 10px; margin-top: 20px; cursor: pointer; font-size: 10px; font-weight: bold; }
+        .action-btn:hover { background: #3d2b1f; }
 
         .custom-marker-container { display: flex; justify-content: center; align-items: center; position: relative; }
         .marker-circle { width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; position: absolute; background: rgba(0,0,0,0.2); }
         .marker-icon-img { width: 26px; height: 26px; z-index: 2; }
 
+        /* POPUPS */
         .leaflet-popup-content-wrapper { background: #2a1f14; color: #f1c40f; border: 1px solid #b8860b; border-radius: 4px; }
         .popup-menu { display: flex; flex-direction: column; gap: 5px; padding: 5px; min-width: 150px; }
         .popup-btn { background: #3d2b1f; color: #f1c40f; border: 1px solid #5d4037; padding: 5px; cursor: pointer; font-family: 'Courier New'; font-size: 10px; }
@@ -116,10 +119,12 @@
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/port.png')"><img src="assets/iconos/port.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/city.png')"><img src="assets/iconos/city.png"></div>
                 <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/fort.png')"><img src="assets/iconos/fort.png"></div>
-            </div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/tower.png')"><img src="assets/iconos/tower.png"></div>
+                <div class="icon-btn" onclick="seleccionarIcono(this, 'assets/iconos/ship.png')"><img src="assets/iconos/ship.png"></div>
+                </div>
 
             <div class="color-selector">
-                <div class="color-dot" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
+                <div class="color-dot active" style="background-color: white;" onclick="seleccionarColor(this, 'white')"></div>
                 <div class="color-dot" style="background-color: #33d1ff;" onclick="seleccionarColor(this, '#33d1ff')"></div>
                 <div class="color-dot" style="background-color: #ff33d1;" onclick="seleccionarColor(this, '#ff33d1')"></div>
                 <div class="color-dot" style="background-color: #33ff4d;" onclick="seleccionarColor(this, '#33ff4d')"></div>
@@ -136,7 +141,14 @@
         var modoGremio = false;
 
         document.addEventListener('DOMContentLoaded', function() {
-            map = L.map('map', { crs: L.CRS.Simple, minZoom: -1, maxZoom: 2, attributionControl: false });
+            map = L.map('map', { 
+                crs: L.CRS.Simple, 
+                minZoom: -1, 
+                maxZoom: 2, 
+                attributionControl: false,
+                zoomControl: true 
+            });
+            
             var bounds = [[0, 0], [1000, 1300]];
             L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
             map.fitBounds(bounds);
@@ -195,7 +207,7 @@
 
             const inputNota = L.DomUtil.create('textarea', '', menu);
             inputNota.placeholder = "Ej: Ron 50g...";
-            inputNota.style.cssText = "width:100%; height:50px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace; resize:none;";
+            inputNota.style.cssText = "width:100%; height:60px; background:#1a1a1a; color:#fff; border:1px solid #5d4037; font-size:10px; margin-top:5px; font-family:monospace; resize:none; padding:5px;";
 
             if (m.options.notaMercado) inputNota.value = m.options.notaMercado;
 
@@ -205,7 +217,7 @@
             };
 
             const btnBorrar = L.DomUtil.create('button', 'popup-btn btn-delete', menu);
-            btnBorrar.innerHTML = "BORRAR MARCADOR";
+            btnBorrar.innerHTML = "ELIMINAR MARCADOR";
             btnBorrar.style.marginTop = "10px";
             btnBorrar.onclick = () => { capa.removeLayer(m); guardarMemoria(); };
 
@@ -219,13 +231,13 @@
                     res.push({ 
                         latlng: l.getLatLng(), 
                         html: l.options.icon.options.html,
-                        nota: l.options.notaMercado || "" // <--- AQUÍ SE GUARDA
+                        nota: l.options.notaMercado || ""
                     });
                 });
                 return res;
             };
-            localStorage.setItem('wsb_v3_local', JSON.stringify(extraer(capaLocal)));
-            localStorage.setItem('wsb_v3_gremio', JSON.stringify(extraer(capaGremio)));
+            localStorage.setItem('wsb_final_local', JSON.stringify(extraer(capaLocal)));
+            localStorage.setItem('wsb_final_gremio', JSON.stringify(extraer(capaGremio)));
         }
 
         function cargarMemoria() {
@@ -234,16 +246,16 @@
                 datos.forEach(d => {
                     const icon = L.divIcon({ html: d.html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] });
                     const m = L.marker(d.latlng, { icon: icon }).addTo(capa);
-                    m.options.notaMercado = d.nota; // <--- AQUÍ SE RECUPERA
+                    m.options.notaMercado = d.nota;
                     vincularMenu(m, capa);
                 });
             };
-            reconstruir('wsb_v3_local', capaLocal);
-            reconstruir('wsb_v3_gremio', capaGremio);
+            reconstruir('wsb_final_local', capaLocal);
+            reconstruir('wsb_final_gremio', capaGremio);
         }
 
         function limpiarCapaActual() {
-            if(confirm("¿Borrar todo lo de esta capa?")) {
+            if(confirm("¿Deseas borrar todos los marcadores de esta capa?")) {
                 modoGremio ? capaGremio.clearLayers() : capaLocal.clearLayers();
                 guardarMemoria();
             }
