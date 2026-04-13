@@ -189,8 +189,7 @@
     </div>
 
     <script>
-        // 1. INICIALIZACIÓN DEL MOTOR
-var map = L.map('map', {
+    var map = L.map('map', {
     crs: L.CRS.Simple,
     minZoom: -1,
     maxZoom: 2,
@@ -202,43 +201,56 @@ var bounds = [[0, 0], [1000, 1300]];
 L.imageOverlay('assets/mapa_juego.jpg', bounds).addTo(map);
 map.fitBounds(bounds);
 
-// 2. LÓGICA DE SELECCIÓN DE ICONOS
+// VARIABLES DE ESTADO
 var iconoSeleccionado = null;
+var colorSeleccionado = 'white'; // Color por defecto
 
-// Buscamos todos los botones de la paleta
+// SELECCIÓN DE ICONO
 document.querySelectorAll('.icon-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        // Quitamos el brillo a cualquier otro botón
-        document.querySelectorAll('.icon-btn').forEach(b => b.style.borderColor = '#3d3d3d');
-        
-        // "Encendemos" el que tocamos
+        document.querySelectorAll('.icon-btn').forEach(b => {
+            b.style.borderColor = '#3d3d3d';
+            b.style.boxShadow = 'none';
+        });
         this.style.borderColor = '#f1c40f';
         this.style.boxShadow = '0 0 10px #f1c40f';
-        
-        // Guardamos la ruta de la imagen seleccionada
         iconoSeleccionado = this.querySelector('img').src;
-        console.log("Icono listo para plantar: " + iconoSeleccionado);
     });
 });
 
-// 3. PLANTAR ICONOS (Clic Derecho) con precisión corregida
+// SELECCIÓN DE COLOR
+document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', function() {
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        this.classList.add('active');
+        colorSeleccionado = this.style.backgroundColor;
+    });
+});
+
+// PLANTAR CON CÍRCULO DE COLOR (Clic Derecho)
 map.on('contextmenu', function(e) {
     if (!iconoSeleccionado) {
-        alert("¡Capitán! Primero seleccione un icono de la derecha.");
+        alert("¡Capitán! Primero seleccione un icono.");
         return;
     }
 
-    var customIcon = L.icon({
-        iconUrl: iconoSeleccionado,
-        iconSize: [32, 32],     // Tamaño estándar para que no se pixele
-        iconAnchor: [16, 16],   // EL TRUCO: 16 es la mitad de 32, así queda centrado al clic
-        popupAnchor: [0, -16]   // Por si luego añadimos nombres a las ciudades
+    // Creamos un elemento HTML personalizado para el marcador
+    var markerHtml = `
+        <div class="custom-marker-container">
+            <div class="marker-circle" style="border-color: ${colorSeleccionado}"></div>
+            <img src="${iconoSeleccionado}" class="marker-icon-img">
+        </div>`;
+
+    var customIcon = L.divIcon({
+        html: markerHtml,
+        className: '', // Quitamos clases por defecto de Leaflet
+        iconSize: [40, 40],
+        iconAnchor: [20, 20] // Precisión: mitad de 40 para que quede centrado al mouse
     });
 
     L.marker(e.latlng, { icon: customIcon }).addTo(map);
 });
 
-// 4. SEGUIMIENTO DE COORDENADAS
 map.on('mousemove', function(e) {
     document.getElementById('coords').innerHTML = 
         `X: ${Math.round(e.latlng.lat)} | Y: ${Math.round(e.latlng.lng)}`;
